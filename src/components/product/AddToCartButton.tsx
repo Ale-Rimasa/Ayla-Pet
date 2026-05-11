@@ -20,18 +20,25 @@ export function AddToCartButton({
 }: AddToCartButtonProps) {
   const addItem = useCartStore((s) => s.addItem)
   const openCart = useCartStore((s) => s.openCart)
+  const cartQty = useCartStore((s) => {
+    const existing = s.items.find((i) => i.variantId === item.variantId)
+    return existing?.quantity ?? 0
+  })
+
+  const outOfStock = stock === 0
+  const wouldExceedStock = cartQty + quantity > stock
+  const disabled = outOfStock || wouldExceedStock
 
   const handleClick = () => {
+    if (disabled) return
     addItem({ ...item, quantity })
     openCart()
   }
 
-  const outOfStock = stock === 0
-
   return (
     <Button
       onClick={handleClick}
-      disabled={outOfStock}
+      disabled={disabled}
       className={className}
       size="lg"
     >

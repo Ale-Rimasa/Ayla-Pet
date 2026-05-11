@@ -61,17 +61,11 @@ describe('decrementStock', () => {
   it('stops at first failure and returns error with the failing variantId', async () => {
     const { createAdminClient } = await import('@/lib/supabase/admin')
 
-    let callCount = 0
-    const mockClientFactory = () => {
-      callCount++
-      const responses = [
-        { data: [{ id: 'v1' }], error: null }, // first item succeeds
-        { data: [], error: null },              // second item fails (insufficient stock)
-      ]
-      const { client } = createSupabaseMock(responses[callCount - 1] ?? responses[0])
-      return client
-    }
-    vi.mocked(createAdminClient).mockImplementation(mockClientFactory as any)
+    const rpcMock = vi.fn()
+      .mockResolvedValueOnce({ data: [{ id: 'v1' }], error: null }) // v1 ok
+      .mockResolvedValueOnce({ data: [], error: null })              // v2 fails (insufficient stock)
+    const client = { rpc: rpcMock }
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
 
     const { decrementStock } = await import('@/lib/db/stock')
     const result = await decrementStock([
@@ -82,6 +76,6 @@ describe('decrementStock', () => {
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain('v2')
-    expect(callCount).toBe(2) // only 2 admin clients created, v3 never reached
+    expect(rpcMock).toHaveBeenCalledTimes(2) // v3 never reached
   })
 })

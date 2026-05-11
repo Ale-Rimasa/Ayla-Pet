@@ -7,7 +7,11 @@ import { formatPrice } from '@/lib/utils'
 import { QuantitySelector } from '@/components/shared/QuantitySelector'
 import { Button } from '@/components/ui/button'
 
-export function CartTable() {
+interface CartTableProps {
+  maxQuantityMap?: Record<string, number>
+}
+
+export function CartTable({ maxQuantityMap = {} }: CartTableProps) {
   const items = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
@@ -35,57 +39,62 @@ export function CartTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border bg-card">
-          {items.map((item) => (
-            <tr key={item.variantId}>
-              <td className="px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
-                    {item.imageUrl && (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    )}
+          {items.map((item) => {
+            const maxStock = maxQuantityMap[item.variantId]
+
+            return (
+              <tr key={item.variantId}>
+                <td className="px-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                      {item.imageUrl && (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium leading-tight">{item.name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+                        {formatPrice(item.price)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium leading-tight">{item.name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
-                      {formatPrice(item.price)}
-                    </p>
+                </td>
+                <td className="hidden px-4 py-4 text-right sm:table-cell">
+                  {formatPrice(item.price)}
+                </td>
+                <td className="px-4 py-4">
+                  <div className="flex justify-center">
+                    <QuantitySelector
+                      value={item.quantity}
+                      min={1}
+                      max={maxStock}
+                      onChange={(qty) => updateQuantity(item.variantId, qty)}
+                    />
                   </div>
-                </div>
-              </td>
-              <td className="hidden px-4 py-4 text-right sm:table-cell">
-                {formatPrice(item.price)}
-              </td>
-              <td className="px-4 py-4">
-                <div className="flex justify-center">
-                  <QuantitySelector
-                    value={item.quantity}
-                    min={1}
-                    onChange={(qty) => updateQuantity(item.variantId, qty)}
-                  />
-                </div>
-              </td>
-              <td className="px-4 py-4 text-right font-semibold">
-                {formatPrice(item.price * item.quantity)}
-              </td>
-              <td className="px-2 py-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => removeItem(item.variantId)}
-                  aria-label={`Eliminar ${item.name}`}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-4 py-4 text-right font-semibold">
+                  {formatPrice(item.price * item.quantity)}
+                </td>
+                <td className="px-2 py-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItem(item.variantId)}
+                    aria-label={`Eliminar ${item.name}`}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

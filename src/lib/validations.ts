@@ -9,7 +9,7 @@ export const CreateCategorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().regex(slugRegex, 'Slug must be lowercase letters, numbers, and hyphens only'),
   description: z.string().optional(),
-  image_url: z.string().optional(),
+  image_url: z.string().url().optional(),
   sort_order: z.number().int().default(0),
 })
 
@@ -67,6 +67,22 @@ const orderStatusValues: [OrderStatus, ...OrderStatus[]] = [
   'cancelled',
   'refunded',
 ]
+
+// ─── Cart ─────────────────────────────────────────────────────────────────────
+
+export const CartItemsSchema = z
+  .array(
+    z.object({
+      variantId: z.string().uuid(),
+      quantity: z.number().int().positive(),
+    })
+  )
+  .min(1)
+  .max(50)
+
+export type CartItemsInput = z.infer<typeof CartItemsSchema>
+
+// ─── Order ───────────────────────────────────────────────────────────────────
 
 export const UpdateOrderStatusSchema = z.object({
   orderId: z.string().uuid(),

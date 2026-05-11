@@ -71,6 +71,10 @@ vi.mock('@/env', () => ({
   },
 }))
 
+vi.mock('@/lib/rate-limit', () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}))
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const WEBHOOK_SECRET = 'test-webhook-secret'
@@ -128,6 +132,8 @@ describe('POST /api/webhooks/mercadopago', () => {
       select: mockSelect,
       eq: mockEq,
     })
+    // Restore default so tests that don't set mockSelect explicitly don't get undefined
+    mockSelect.mockResolvedValue({ data: [], error: null })
 
     mockDecrementStock.mockResolvedValue({ ok: true })
     mockUpdateOrderStatus.mockResolvedValue({ ok: true })

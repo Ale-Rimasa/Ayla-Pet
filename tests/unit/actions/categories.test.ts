@@ -82,7 +82,7 @@ describe('softDeleteCategory', () => {
     }))
 
     const { softDeleteCategory } = await import('@/lib/actions/categories')
-    const result = await softDeleteCategory('cat-uuid')
+    const result = await softDeleteCategory('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
 
     expect(result).toEqual({ ok: false, error: 'category_has_products' })
     expect(revalidatePath).not.toHaveBeenCalled()
@@ -103,7 +103,7 @@ describe('softDeleteCategory', () => {
     }))
 
     const { softDeleteCategory } = await import('@/lib/actions/categories')
-    const result = await softDeleteCategory('cat-uuid')
+    const result = await softDeleteCategory('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
 
     expect(result).toEqual({ ok: true })
     expect(revalidatePath).toHaveBeenCalledWith('/admin/categorias')
