@@ -125,14 +125,14 @@ describe('ConfirmacionClient', () => {
     expect(screen.getByText(/te avisaremos por email/i)).toBeInTheDocument()
   })
 
-  it('clears the interval on unmount to avoid memory leaks', () => {
-    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
+  it('clears the timeout on unmount to avoid memory leaks', () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
     mockGetOrderStatus.mockResolvedValue({ status: 'pending' })
 
     const { unmount } = render(<ConfirmacionClient order={makeOrder('pending')} />)
     unmount()
 
-    expect(clearIntervalSpy).toHaveBeenCalled()
-    clearIntervalSpy.mockRestore()
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    clearTimeoutSpy.mockRestore()
   })
 })

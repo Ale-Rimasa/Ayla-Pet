@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-type MockResponse<T = unknown> = { data: T; error: null } | { data: null; error: { message: string } }
+type MockResponse<T = unknown> = { data: T; error: null; count?: number } | { data: null; error: { message: string }; count?: number }
 
 export function createMockChain<T = unknown>(response: MockResponse<T>) {
   const chain: Record<string, unknown> = {}

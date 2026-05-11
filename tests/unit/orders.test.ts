@@ -276,6 +276,20 @@ describe('updateOrderStatus', () => {
     expect(chain.insert).not.toHaveBeenCalled()
   })
 
+  it('returns concurrent_modification when UPDATE affects 0 rows', async () => {
+    // Simulate: status changed between our SELECT and UPDATE (concurrent write won)
+    const { client, chain } = createSupabaseMock({ data: null, error: null, count: 0 })
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
+
+    const { updateOrderStatus } = await import('@/lib/db/orders')
+    const result = await updateOrderStatus('order-uuid', 'paid')
+
+    expect(result).toEqual({ ok: false, error: 'concurrent_modification' })
+    expect(chain.insert).not.toHaveBeenCalled()
+  })
+
   it('passes null actor_id when actorId not provided', async () => {
     const { client, chain } = createSupabaseMock({ data: null, error: null })
     chain.single = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })

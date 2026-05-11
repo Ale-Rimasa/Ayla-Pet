@@ -27,7 +27,7 @@ export const CreateProductSchema = z.object({
   slug: z.string().regex(slugRegex, 'El slug solo puede tener minúsculas, números y guiones'),
   description: z.string().optional(),
   category_id: z.string().uuid(),
-  images: z.array(z.string()).default([]),
+  images: z.array(z.string().url()).default([]),
   featured: z.boolean().default(false),
 })
 

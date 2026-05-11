@@ -43,16 +43,20 @@ export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
     // If already paid on mount, no polling needed
     if (order.status === 'paid') return
 
+    let stopped = false
+
     function stopPolling() {
+      stopped = true
       if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current)
+        clearTimeout(intervalRef.current)
         intervalRef.current = null
       }
     }
 
     const MAX_CONSECUTIVE_ERRORS = 4
 
-    intervalRef.current = setInterval(async () => {
+    async function tick() {
+      if (stopped) return
       attemptsRef.current += 1
 
       try {
@@ -77,8 +81,16 @@ export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         stopPolling()
         setPollingState('timeout')
+        return
       }
-    }, POLL_INTERVAL_MS)
+
+      // Schedule next tick only after this one completes — no overlap
+      if (!stopped) {
+        intervalRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+      }
+    }
+
+    intervalRef.current = setTimeout(tick, POLL_INTERVAL_MS)
 
     return () => {
       stopPolling()

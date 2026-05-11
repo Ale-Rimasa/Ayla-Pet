@@ -178,13 +178,20 @@ export async function updateOrderStatus(
 
   const fromStatus = (current as { status: OrderStatus } | null)?.status ?? null
 
-  const { error: updateError } = await supabase
+  // Conditional UPDATE: only applies if status hasn't changed since we read it above.
+  // If another concurrent call already changed the status, count === 0 → conflict error.
+  const { count, error: updateError } = await supabase
     .from('orders')
-    .update({ status })
+    .update({ status }, { count: 'exact' })
     .eq('id', id)
+    .eq('status', fromStatus as string)
 
   if (updateError) {
     return { ok: false, error: updateError.message }
+  }
+
+  if (count === 0) {
+    return { ok: false, error: 'concurrent_modification' }
   }
 
   await supabase.from('order_status_history').insert({
