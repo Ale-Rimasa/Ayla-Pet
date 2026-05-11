@@ -31,7 +31,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       resetCheckout: () => set(initialState),
     }),
     {
-      name: 'jengibre-checkout',
+      name: 'pet-laser-checkout-v1',
       skipHydration: true,
     }
   )

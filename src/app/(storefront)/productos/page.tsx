@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import { getCategories } from '@/lib/db/categories'
 import { ProductCard } from '@/components/shared/ProductCard'
+import { BRAND } from '@/lib/constants'
 export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Productos',
-  description: 'Explorá toda la colección de cerámica y acuarela de Jengibre Acuaceramica.',
+  description: `Explorá todos los productos de ${BRAND.name}.`,
 }
 
 interface ProductsPageProps {

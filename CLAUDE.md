@@ -26,7 +26,7 @@ En el primer mensaje significativo de cada sesión, antes de responder:
 
 Canonical Engram project name for this repository:
 
-**`pt-laser`**
+**`pet-laser-ecommerce`**
 
 Always use this exact project identifier for memory retrieval and persistence.
 Never use alternate names with spaces or different casing.

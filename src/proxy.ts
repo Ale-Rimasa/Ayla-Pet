@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { env } from '@/env'
 import type { Database } from '@/types/database'
 
-export async function updateSession(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient<Database>(
@@ -25,8 +25,10 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh session — must happen before any redirect logic
-  const { data: { user } } = await supabase.auth.getUser()
+  // Must run before any redirect — refreshes the session cookie
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
   const isAdminPath = pathname.startsWith('/admin')
@@ -49,4 +51,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   return response
+}
+
+export const proxyConfig = {
+  matcher: [
+    '/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

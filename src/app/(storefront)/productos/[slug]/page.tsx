@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getProductSlugs, getProductBySlug } from '@/lib/db/products'
 import { ProductDetailClient } from './ProductDetailClient'
+import { BRAND } from '@/lib/constants'
 export const revalidate = 30
 export const dynamicParams = true
 
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return {}
   return {
     title: product.name,
-    description: product.description ?? `${product.name} — Jengibre Acuaceramica`,
+    description: product.description ?? `${product.name} — ${BRAND.name}`,
     openGraph: {
       title: product.name,
       images: product.images[0] ? [product.images[0]] : [],

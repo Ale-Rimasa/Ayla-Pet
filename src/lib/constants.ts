@@ -4,13 +4,12 @@ export const REVALIDATE_CATALOG = 60
 export const REVALIDATE_PRODUCT = 30
 
 export const BRAND = {
-  name: 'PT Laser',
-  displayLine1: 'PT',
-  displayLine2: 'Laser',
+  name: 'Ayla Pet',
+  displayLine1: 'Ayla',
+  displayLine2: 'Pet',
   adminEmail: 'admin@ptlaser.com.ar',
   domain: 'ptlaser.com.ar',
   instagram: 'https://www.instagram.com/ptlaser/',
-  whatsapp: '5491100000000',
   email: 'ventas@ptlaser.com.ar',
 } as const
 

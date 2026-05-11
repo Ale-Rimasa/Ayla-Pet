@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getCategoryBySlug } from '@/lib/db/categories'
 import { getProducts } from '@/lib/db/products'
 import { ProductCard } from '@/components/shared/ProductCard'
+import { BRAND } from '@/lib/constants'
 export const revalidate = 60
 export const dynamicParams = true
 
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return {}
   return {
     title: category.name,
-    description: category.description ?? `${category.name} — Jengibre Acuaceramica`,
+    description: category.description ?? `${category.name} — ${BRAND.name}`,
   }
 }
 

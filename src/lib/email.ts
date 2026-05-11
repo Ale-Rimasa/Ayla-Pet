@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { env } from '@/env'
+import { BRAND } from '@/lib/constants'
 import type { Order } from '@/types'
 
 const resend = new Resend(env.RESEND_API_KEY)
@@ -24,7 +25,7 @@ export async function sendOrderConfirmation(order: Order): Promise<void> {
         '',
         `Total: $${(order.total / 100).toFixed(2)}`,
         '',
-        'Gracias por tu compra en Jengibre Acuaceramica.',
+        `Gracias por tu compra en ${BRAND.name}.`,
       ].join('\n'),
     })
   } catch (err) {
