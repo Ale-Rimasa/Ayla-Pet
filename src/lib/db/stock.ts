@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Tables } from '@/types/database'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,15 +26,14 @@ export async function getVariantsStock(
     .in('id', variantIds)
 
   if (error || !data) {
-    // Return 0 for all requested ids on error
-    return Object.fromEntries(variantIds.map((id) => [id, 0]))
+    throw new Error(`getVariantsStock DB error: ${error?.message ?? 'no data'}`)
   }
 
   const stockMap: Record<string, number> = Object.fromEntries(
     variantIds.map((id) => [id, 0])
   )
 
-  for (const row of data as Array<{ id: string; stock: number }>) {
+  for (const row of data as Array<Pick<Tables<'product_variants'>, 'id' | 'stock'>>) {
     stockMap[row.id] = row.stock
   }
 
@@ -55,6 +55,9 @@ export async function validateCartStock(
     .in('id', variantIds)
 
   if (error || !data) {
+    // Conservative failure: DB error blocks checkout to prevent overselling.
+    // Trade-off: users see "out of stock" during Supabase outages. Acceptable
+    // over the alternative (allowing purchases we can't fulfill).
     return {
       ok: false,
       errors: items.map((i) => ({
@@ -66,7 +69,9 @@ export async function validateCartStock(
     }
   }
 
-  type VariantRow = { id: string; stock: number; products: { name: string } | null }
+  type VariantRow = Pick<Tables<'product_variants'>, 'id' | 'stock'> & {
+    products: Pick<Tables<'products'>, 'name'> | null
+  }
 
   const rowMap = new Map<string, VariantRow>()
   for (const row of data as VariantRow[]) {
@@ -105,23 +110,20 @@ export async function decrementStock(
     return { ok: true }
   }
 
-  // Service-role required: decrement_stock RPC modifies data and must bypass RLS
+  // Service-role required: decrement_stock_batch RPC modifies data and must bypass RLS.
+  // Single transactional call — any insufficient stock rolls back all decrements.
   const supabase = createAdminClient()
 
-  for (const item of items) {
-    const { data, error } = await supabase.rpc('decrement_stock', {
-      p_variant_id: item.variantId,
-      p_qty: item.quantity,
-    })
+  const payload = items.map((i) => ({ variant_id: i.variantId, qty: i.quantity }))
 
-    if (error) {
-      return { ok: false, error: error.message }
-    }
+  const { error } = await supabase.rpc('decrement_stock_batch', { p_items: payload })
 
-    const rows = data as unknown[]
-    if (!rows || rows.length === 0) {
-      return { ok: false, error: `insufficient stock for variant ${item.variantId}` }
+  if (error) {
+    const match = error.message.match(/insufficient_stock_for_variant:(.+)/)
+    if (match) {
+      return { ok: false, error: `insufficient stock for variant ${match[1].trim()}` }
     }
+    return { ok: false, error: error.message }
   }
 
   return { ok: true }

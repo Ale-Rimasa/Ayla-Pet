@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState } from 'react'
 import { useCartStore } from '@/store/cart.store'
+import { useCheckoutStore } from '@/store/checkout.store'
+import { CheckoutSchema } from '@/lib/validations'
+import type { CheckoutFormValues } from '@/lib/validations'
 import { formatPrice } from '@/lib/utils'
 import { SHIPPING_COSTS } from '@/lib/constants'
 import { Input } from '@/components/ui/input'
@@ -13,23 +14,6 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { StepIndicator } from '@/components/checkout/StepIndicator'
-
-const checkoutSchema = z.object({
-  customer: z.object({
-    name: z.string().min(2, 'Ingresá tu nombre completo'),
-    email: z.string().email('Email inválido'),
-    phone: z.string().min(8, 'Ingresá un teléfono válido'),
-  }),
-  shippingAddress: z.object({
-    street: z.string().min(3, 'Ingresá la dirección'),
-    city: z.string().min(2, 'Ingresá la ciudad'),
-    province: z.string().min(2, 'Ingresá la provincia'),
-    postalCode: z.string().min(4, 'Ingresá el código postal'),
-  }),
-  shippingMethod: z.enum(['standard', 'express', 'pickup']),
-})
-
-type CheckoutFormValues = z.infer<typeof checkoutSchema>
 
 const STEP1_FIELDS: (
   | keyof CheckoutFormValues
@@ -46,11 +30,22 @@ const STEP1_FIELDS: (
   'shippingMethod',
 ]
 
+// Map store steps to the numeric step used by StepIndicator
+function stepToNumber(step: 'shipping' | 'review' | 'payment'): 1 | 2 {
+  return step === 'shipping' ? 1 : 2
+}
+
 export function CheckoutForm() {
-  const router = useRouter()
   const items = useCartStore((s) => s.items)
   const totalPrice = useCartStore((s) => s.totalPrice)
-  const [step, setStep] = useState<1 | 2>(1)
+
+  const step = useCheckoutStore((s) => s.step)
+  const setStep = useCheckoutStore((s) => s.setStep)
+  const storedCustomer = useCheckoutStore((s) => s.customerInfo)
+  const storedShipping = useCheckoutStore((s) => s.shippingAddress)
+  const setCustomerInfo = useCheckoutStore((s) => s.setCustomerInfo)
+  const setShippingAddress = useCheckoutStore((s) => s.setShippingAddress)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,11 +53,14 @@ export function CheckoutForm() {
     register,
     handleSubmit,
     trigger,
+    getValues,
     watch,
     formState: { errors },
   } = useForm<CheckoutFormValues>({
-    resolver: zodResolver(checkoutSchema),
+    resolver: zodResolver(CheckoutSchema),
     defaultValues: {
+      customer: storedCustomer ?? undefined,
+      shippingAddress: storedShipping ?? undefined,
       shippingMethod: 'standard',
     },
   })
@@ -74,7 +72,12 @@ export function CheckoutForm() {
 
   const handleContinue = async () => {
     const valid = await trigger(STEP1_FIELDS as Parameters<typeof trigger>[0])
-    if (valid) setStep(2)
+    if (valid) {
+      const values = getValues()
+      setCustomerInfo(values.customer)
+      setShippingAddress(values.shippingAddress)
+      setStep('review')
+    }
   }
 
   const onSubmit = async (data: CheckoutFormValues) => {
@@ -91,7 +94,6 @@ export function CheckoutForm() {
           quantity: i.quantity,
         })),
         shippingMethod: data.shippingMethod,
-        clientTotal: total,
       }
 
       const orderRes = await fetch('/api/orders', {
@@ -119,19 +121,22 @@ export function CheckoutForm() {
       }
 
       const { initPoint } = await prefRes.json()
-      router.push(initPoint)
+
+      window.location.assign(initPoint)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
       setIsSubmitting(false)
     }
   }
 
+  const currentStep = stepToNumber(step)
+
   return (
     <div className="space-y-8">
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={currentStep} />
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        {step === 1 && (
+        {currentStep === 1 && (
           <div className="space-y-8">
             <section aria-labelledby="customer-heading">
               <h2 id="customer-heading" className="mb-4 text-lg font-semibold">
@@ -301,7 +306,7 @@ export function CheckoutForm() {
           </div>
         )}
 
-        {step === 2 && (
+        {currentStep === 2 && (
           <div className="space-y-8">
             <section aria-labelledby="summary-heading">
               <h2 id="summary-heading" className="mb-4 text-lg font-semibold">
@@ -345,7 +350,7 @@ export function CheckoutForm() {
                 variant="outline"
                 size="lg"
                 className="flex-1"
-                onClick={() => setStep(1)}
+                onClick={() => setStep('shipping')}
                 disabled={isSubmitting}
               >
                 ← Volver

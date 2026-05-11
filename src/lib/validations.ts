@@ -6,8 +6,8 @@ const slugRegex = /^[a-z0-9-]+$/
 // ─── Category ────────────────────────────────────────────────────────────────
 
 export const CreateCategorySchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  slug: z.string().regex(slugRegex, 'Slug must be lowercase letters, numbers, and hyphens only'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  slug: z.string().regex(slugRegex, 'El slug solo puede tener minúsculas, números y guiones'),
   description: z.string().optional(),
   image_url: z.string().url().optional(),
   sort_order: z.number().int().default(0),
@@ -23,8 +23,8 @@ export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>
 // ─── Product ─────────────────────────────────────────────────────────────────
 
 export const CreateProductSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  slug: z.string().regex(slugRegex, 'Slug must be lowercase letters, numbers, and hyphens only'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  slug: z.string().regex(slugRegex, 'El slug solo puede tener minúsculas, números y guiones'),
   description: z.string().optional(),
   category_id: z.string().uuid(),
   images: z.array(z.string()).default([]),
@@ -42,10 +42,10 @@ export type UpdateProductInput = z.infer<typeof UpdateProductSchema>
 
 export const CreateVariantSchema = z.object({
   product_id: z.string().uuid(),
-  name: z.string().min(1, 'Variant name is required'),
+  name: z.string().min(1, 'El nombre de la variante es obligatorio'),
   sku: z.string().optional(),
-  price: z.number().int().positive('Price must be a positive integer (centavos)'),
-  stock: z.number().int().min(0, 'Stock cannot be negative'),
+  price: z.number().int().positive('El precio debe ser un entero positivo (centavos)'),
+  stock: z.number().int().min(0, 'El stock no puede ser negativo'),
   sort_order: z.number().int().default(0),
 })
 
@@ -67,6 +67,25 @@ const orderStatusValues: [OrderStatus, ...OrderStatus[]] = [
   'cancelled',
   'refunded',
 ]
+
+// ─── Checkout ────────────────────────────────────────────────────────────────
+
+export const CheckoutSchema = z.object({
+  customer: z.object({
+    name: z.string().min(2, 'Ingresá tu nombre completo'),
+    email: z.string().email('Email inválido'),
+    phone: z.string().min(8, 'Ingresá un teléfono válido'),
+  }),
+  shippingAddress: z.object({
+    street: z.string().min(3, 'Ingresá la dirección'),
+    city: z.string().min(2, 'Ingresá la ciudad'),
+    province: z.string().min(2, 'Ingresá la provincia'),
+    postalCode: z.string().min(4, 'Ingresá el código postal'),
+  }),
+  shippingMethod: z.enum(['standard', 'express', 'pickup']),
+})
+
+export type CheckoutFormValues = z.infer<typeof CheckoutSchema>
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
