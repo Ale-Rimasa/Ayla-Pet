@@ -97,8 +97,8 @@ describe('updateOrderStatus (action)', () => {
     const result = await updateOrderStatus({ orderId: ORDER_UUID, status: 'paid' })
 
     expect(result).toEqual({ ok: true })
-    expect(dbUpdateOrderStatus).toHaveBeenCalledWith(ORDER_UUID, 'paid', 'admin-id')
+    expect(dbUpdateOrderStatus).toHaveBeenCalledWith(ORDER_UUID, 'pending', 'paid', 'admin-id')
     expect(revalidatePath).toHaveBeenCalledWith('/admin/pedidos')
-    expect(revalidateTag).toHaveBeenCalledWith(`pedido:${ORDER_UUID}`)
+    expect(revalidateTag).toHaveBeenCalledWith(`pedido:${ORDER_UUID}`, {})
   })
 })

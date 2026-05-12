@@ -9,10 +9,12 @@ describe('getOrderStatus (action)', () => {
 
   it('returns null when the order does not exist', async () => {
     vi.doMock('@/lib/db/orders', () => ({
-      getOrderById: vi.fn().mockResolvedValue(null),
+      getOrderStatusById: vi.fn().mockResolvedValue(null),
       updateOrderStatus: vi.fn(),
     }))
     vi.doMock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
+    vi.doMock('next/headers', () => ({ headers: vi.fn().mockResolvedValue({ get: () => '1.2.3.4' }) }))
+    vi.doMock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn().mockResolvedValue(true) }))
     vi.doMock('@/lib/auth', () => ({ requireAdmin: vi.fn() }))
     vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
 
@@ -24,10 +26,12 @@ describe('getOrderStatus (action)', () => {
 
   it('returns { status: "pending" } when order is pending', async () => {
     vi.doMock('@/lib/db/orders', () => ({
-      getOrderById: vi.fn().mockResolvedValue({ id: ORDER_UUID, status: 'pending' }),
+      getOrderStatusById: vi.fn().mockResolvedValue({ status: 'pending' }),
       updateOrderStatus: vi.fn(),
     }))
     vi.doMock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
+    vi.doMock('next/headers', () => ({ headers: vi.fn().mockResolvedValue({ get: () => '1.2.3.4' }) }))
+    vi.doMock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn().mockResolvedValue(true) }))
     vi.doMock('@/lib/auth', () => ({ requireAdmin: vi.fn() }))
     vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
 
@@ -39,10 +43,12 @@ describe('getOrderStatus (action)', () => {
 
   it('returns { status: "paid" } when order is paid', async () => {
     vi.doMock('@/lib/db/orders', () => ({
-      getOrderById: vi.fn().mockResolvedValue({ id: ORDER_UUID, status: 'paid' }),
+      getOrderStatusById: vi.fn().mockResolvedValue({ status: 'paid' }),
       updateOrderStatus: vi.fn(),
     }))
     vi.doMock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
+    vi.doMock('next/headers', () => ({ headers: vi.fn().mockResolvedValue({ get: () => '1.2.3.4' }) }))
+    vi.doMock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn().mockResolvedValue(true) }))
     vi.doMock('@/lib/auth', () => ({ requireAdmin: vi.fn() }))
     vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
 

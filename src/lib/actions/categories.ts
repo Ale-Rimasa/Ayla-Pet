@@ -15,9 +15,11 @@ export async function uploadCategoryImage(
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   await requireAdmin()
   const file = formData.get('file') as File | null
-  const path = formData.get('path') as string | null
-  if (!file || !path) return { ok: false, error: 'missing_params' }
-  return uploadImage('categorias', path, file)
+  if (!file) return { ok: false, error: 'missing_params' }
+  // Generate path server-side — never accept client-provided storage paths.
+  const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const safePath = `${crypto.randomUUID()}.${ext}`
+  return uploadImage('categorias', safePath, file)
 }
 
 export async function createCategory(
@@ -30,6 +32,8 @@ export async function createCategory(
     return { ok: false, error: 'validation_error' }
   }
 
+  // Service-role required: RLS restricts category writes to service-role;
+  // authenticated session alone is insufficient for table mutations.
   const supabase = createAdminClient()
 
   const { data: inserted, error } = await supabase
@@ -61,6 +65,7 @@ export async function updateCategory(
 
   const { id, ...fields } = parsed.data
 
+  // Service-role required: RLS restricts category writes to service-role.
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -88,6 +93,7 @@ export async function softDeleteCategory(
   const parsed = idSchema.safeParse(id)
   if (!parsed.success) return { ok: false, error: 'invalid_id' }
 
+  // Service-role required: RLS restricts category writes to service-role.
   const supabase = createAdminClient()
 
   const { data: activeProducts } = await supabase
@@ -104,6 +110,34 @@ export async function softDeleteCategory(
   const { error } = await supabase
     .from('categories')
     .update({ deleted_at: new Date().toISOString() })
+    .eq('id', parsed.data)
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  revalidatePath('/admin/categorias')
+  revalidatePath('/categorias')
+  revalidatePath('/productos')
+
+  return { ok: true }
+}
+
+export async function restoreCategory(
+  id: string
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin()
+
+  const parsed = idSchema.safeParse(id)
+  if (!parsed.success) return { ok: false, error: 'validation_error' }
+
+  // Service-role audit: category restore is an admin-only write that must update
+  // soft-deleted rows hidden from public RLS policies.
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('categories')
+    .update({ deleted_at: null })
     .eq('id', parsed.data)
 
   if (error) {

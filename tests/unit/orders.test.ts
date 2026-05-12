@@ -232,76 +232,59 @@ describe('getOrderById', () => {
 describe('updateOrderStatus', () => {
   beforeEach(() => { vi.resetModules() })
 
-  it('updates order status successfully', async () => {
-    const { client, chain } = createSupabaseMock({ data: { status: 'paid' }, error: null })
-    chain.single = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
+  it('calls RPC with correct params and returns ok:true', async () => {
+    const { client, rpc } = createSupabaseMock({ data: { ok: true }, error: null })
     const { createAdminClient } = await import('@/lib/supabase/admin')
     vi.mocked(createAdminClient).mockReturnValue(client as any)
 
     const { updateOrderStatus } = await import('@/lib/db/orders')
-    const result = await updateOrderStatus('order-uuid', 'paid')
+    const result = await updateOrderStatus('order-uuid', 'pending', 'paid', 'actor-uuid')
 
     expect(result.ok).toBe(true)
+    expect(rpc).toHaveBeenCalledWith('update_order_status_atomic', {
+      p_order_id: 'order-uuid',
+      p_from_status: 'pending',
+      p_new_status: 'paid',
+      p_actor_id: 'actor-uuid',
+    })
   })
 
-  it('inserts into order_status_history with from/to/actorId', async () => {
-    const { client, chain } = createSupabaseMock({ data: null, error: null })
-    chain.single = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
+  it('returns concurrent_modification when RPC signals it', async () => {
+    const { client } = createSupabaseMock({
+      data: { ok: false, error: 'concurrent_modification' },
+      error: null,
+    })
     const { createAdminClient } = await import('@/lib/supabase/admin')
     vi.mocked(createAdminClient).mockReturnValue(client as any)
 
     const { updateOrderStatus } = await import('@/lib/db/orders')
-    await updateOrderStatus('order-uuid', 'paid', 'actor-uuid')
-
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      order_id: 'order-uuid',
-      from_status: 'pending',
-      to_status: 'paid',
-      actor_id: 'actor-uuid',
-    }))
-  })
-
-  it('does not insert history when UPDATE fails', async () => {
-    const { client, chain } = createSupabaseMock({ data: null, error: { message: 'update failed' } })
-    chain.single = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    vi.mocked(createAdminClient).mockReturnValue(client as any)
-
-    const { updateOrderStatus } = await import('@/lib/db/orders')
-    const result = await updateOrderStatus('order-uuid', 'paid')
-
-    expect(result.ok).toBe(false)
-    expect(chain.insert).not.toHaveBeenCalled()
-  })
-
-  it('returns concurrent_modification when UPDATE affects 0 rows', async () => {
-    // Simulate: status changed between our SELECT and UPDATE (concurrent write won)
-    const { client, chain } = createSupabaseMock({ data: null, error: null, count: 0 })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    vi.mocked(createAdminClient).mockReturnValue(client as any)
-
-    const { updateOrderStatus } = await import('@/lib/db/orders')
-    const result = await updateOrderStatus('order-uuid', 'paid')
+    const result = await updateOrderStatus('order-uuid', 'pending', 'paid')
 
     expect(result).toEqual({ ok: false, error: 'concurrent_modification' })
-    expect(chain.insert).not.toHaveBeenCalled()
+  })
+
+  it('returns error when RPC call itself fails', async () => {
+    const { client } = createSupabaseMock({ data: null, error: { message: 'rpc error' } })
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
+
+    const { updateOrderStatus } = await import('@/lib/db/orders')
+    const result = await updateOrderStatus('order-uuid', 'pending', 'paid')
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe('rpc error')
   })
 
   it('passes null actor_id when actorId not provided', async () => {
-    const { client, chain } = createSupabaseMock({ data: null, error: null })
-    chain.single = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: { status: 'pending' }, error: null })
+    const { client, rpc } = createSupabaseMock({ data: { ok: true }, error: null })
     const { createAdminClient } = await import('@/lib/supabase/admin')
     vi.mocked(createAdminClient).mockReturnValue(client as any)
 
     const { updateOrderStatus } = await import('@/lib/db/orders')
-    await updateOrderStatus('order-uuid', 'shipped')
+    await updateOrderStatus('order-uuid', 'pending', 'shipped')
 
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      actor_id: null,
+    expect(rpc).toHaveBeenCalledWith('update_order_status_atomic', expect.objectContaining({
+      p_actor_id: null,
     }))
   })
 })

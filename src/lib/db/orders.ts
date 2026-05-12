@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth'
 import type { Order, OrderItem, OrderStatus, CreateOrderPayload } from '@/types'
 
 interface DbOrderItem {
@@ -33,6 +34,24 @@ interface DbOrder {
   created_at: string
   updated_at: string
   order_items: DbOrderItem[]
+}
+
+interface DbOrderStatusHistoryEntry {
+  id: string
+  order_id: string
+  from_status: OrderStatus | null
+  to_status: OrderStatus
+  actor_id: string | null
+  created_at: string
+}
+
+export interface OrderStatusHistoryEntry {
+  id: string
+  orderId: string
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  actorId: string | null
+  createdAt: string
 }
 
 function mapOrderItem(item: DbOrderItem): OrderItem {
@@ -73,6 +92,19 @@ function mapOrder(row: DbOrder): Order {
     notes: row.notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+function mapOrderStatusHistoryEntry(
+  row: DbOrderStatusHistoryEntry
+): OrderStatusHistoryEntry {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    actorId: row.actor_id,
+    createdAt: row.created_at,
   }
 }
 
@@ -131,8 +163,16 @@ export async function getOrderById(id: string): Promise<Order | null> {
   return mapOrder(data as unknown as DbOrder)
 }
 
+// Defense-in-depth: full order includes customer PII — require admin session.
+// Use getOrderById directly for non-admin contexts (webhook, payment preference, checkout).
+export async function getOrderByIdForAdmin(id: string): Promise<Order | null> {
+  await requireAdmin()
+  return getOrderById(id)
+}
+
 export interface GetOrdersForAdminOptions {
   status?: OrderStatus
+  searchQuery?: string
   page?: number
   pageSize?: number
 }
@@ -140,7 +180,9 @@ export interface GetOrdersForAdminOptions {
 export async function getOrdersForAdmin(
   opts: GetOrdersForAdminOptions = {}
 ): Promise<{ data: Order[]; count: number }> {
-  const { status, page = 1, pageSize = 20 } = opts
+  // Defense-in-depth: service-role bypasses RLS — require admin session.
+  await requireAdmin()
+  const { status, searchQuery, page = 1, pageSize = 20 } = opts
   const supabase = createAdminClient()
 
   const from = (page - 1) * pageSize
@@ -156,6 +198,19 @@ export async function getOrdersForAdmin(
     query = query.eq('status', status)
   }
 
+  if (searchQuery) {
+    // Strip PostgREST filter syntax chars and escape SQL LIKE wildcards
+    const safe = searchQuery
+      .replace(/[,()]/g, '')   // PostgREST filter injection
+      .replace(/[%_\\]/g, '\\$&')  // SQL LIKE wildcards
+      .slice(0, 100)
+    if (safe) {
+      query = query.or(
+        `customer_name.ilike.%${safe}%,customer_email.ilike.%${safe}%`
+      )
+    }
+  }
+
   const { data, count } = await query
 
   const orders = (data as unknown as DbOrder[] ?? []).map(mapOrder)
@@ -163,43 +218,66 @@ export async function getOrdersForAdmin(
   return { data: orders, count: count ?? 0 }
 }
 
-export async function updateOrderStatus(
-  id: string,
-  status: OrderStatus,
-  actorId?: string
-): Promise<{ ok: boolean; error?: string }> {
+export async function getOrderStatusHistory(
+  orderId: string
+): Promise<OrderStatusHistoryEntry[]> {
+  // Defense-in-depth: service-role, admin-only function
+  await requireAdmin()
   const supabase = createAdminClient()
 
-  const { data: current } = await supabase
+  const { data, error } = await supabase
+    .from('order_status_history')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true })
+
+  if (error) return []
+
+  return ((data as unknown as DbOrderStatusHistoryEntry[]) ?? []).map(
+    mapOrderStatusHistoryEntry
+  )
+}
+
+// Narrow query — only fetches status, no PII fields.
+export async function getOrderStatusById(
+  id: string
+): Promise<{ status: OrderStatus } | null> {
+  // Service-role required to bypass RLS on orders table
+  const supabase = createAdminClient()
+  const { data } = await supabase
     .from('orders')
     .select('status')
     .eq('id', id)
     .maybeSingle()
+  if (!data) return null
+  return { status: (data as { status: OrderStatus }).status }
+}
 
-  const fromStatus = (current as { status: OrderStatus } | null)?.status ?? null
+export async function updateOrderStatus(
+  id: string,
+  fromStatus: OrderStatus,
+  status: OrderStatus,
+  actorId?: string
+): Promise<{ ok: boolean; error?: string }> {
+  // Service-role required: update_order_status_atomic bypasses RLS.
+  // RPC wraps UPDATE + history INSERT in one transaction — no audit gaps.
+  const supabase = createAdminClient()
 
-  // Conditional UPDATE: only applies if status hasn't changed since we read it above.
-  // If another concurrent call already changed the status, count === 0 → conflict error.
-  const { count, error: updateError } = await supabase
-    .from('orders')
-    .update({ status }, { count: 'exact' })
-    .eq('id', id)
-    .eq('status', fromStatus as string)
+  // RPC not yet in generated types — regenerate after running migration 015.
+  type UpdateStatusRpc = (
+    fn: 'update_order_status_atomic',
+    args: { p_order_id: string; p_from_status: OrderStatus; p_new_status: OrderStatus; p_actor_id: string | null }
+  ) => Promise<{ data: { ok: boolean; error?: string } | null; error: { message: string } | null }>
 
-  if (updateError) {
-    return { ok: false, error: updateError.message }
-  }
-
-  if (count === 0) {
-    return { ok: false, error: 'concurrent_modification' }
-  }
-
-  await supabase.from('order_status_history').insert({
-    order_id: id,
-    from_status: fromStatus,
-    to_status: status,
-    actor_id: actorId ?? null,
+  const rpc = supabase.rpc as unknown as UpdateStatusRpc
+  const { data, error } = await rpc('update_order_status_atomic', {
+    p_order_id: id,
+    p_from_status: fromStatus,
+    p_new_status: status,
+    p_actor_id: actorId ?? null,
   })
 
-  return { ok: true }
+  if (error) return { ok: false, error: error.message }
+
+  return data as { ok: boolean; error?: string }
 }

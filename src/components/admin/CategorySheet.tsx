@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { toast } from 'sonner'
 import {
   ImageIcon,
@@ -30,12 +32,14 @@ import {
 } from '@/lib/actions/categories'
 import type { Category } from '@/types'
 
-interface FormValues {
-  name: string
-  slug: string
-  description: string
-  sort_order: string
-}
+const categoryFormSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido'),
+  slug: z.string().min(1, 'El slug es requerido').regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
+  description: z.string().optional(),
+  sort_order: z.string(),
+})
+
+type FormValues = z.infer<typeof categoryFormSchema>
 
 interface CategorySheetProps {
   category?: Category | null
@@ -47,7 +51,7 @@ function toSlug(name: string) {
   return name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
@@ -68,6 +72,7 @@ export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
+    resolver: zodResolver(categoryFormSchema),
     defaultValues: {
       name: category?.name ?? '',
       slug: category?.slug ?? '',
@@ -98,11 +103,8 @@ export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
     let imageUrl = currentImageUrl
 
     if (pendingFile) {
-      const ext = pendingFile.name.split('.').pop()
-      const path = `categories/${Date.now()}.${ext}`
       const formData = new FormData()
       formData.append('file', pendingFile)
-      formData.append('path', path)
       const result = await uploadCategoryImage(formData)
       if (!result.ok) {
         toast.error(`Error al subir imagen: ${result.error}`)

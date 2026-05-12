@@ -1,7 +1,9 @@
-import { SidebarTrigger } from '@/components/ui/sidebar'
+﻿import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { logoutAction } from '@/lib/actions/auth'
 import type { User } from '@supabase/supabase-js'
 
 interface AdminHeaderProps {
@@ -19,6 +21,11 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         <Badge variant="secondary" className="text-xs">
           Propietaria
         </Badge>
+        <form action={logoutAction}>
+          <Button type="submit" variant="ghost" size="sm">
+            Cerrar sesión
+          </Button>
+        </form>
         <Avatar className="h-8 w-8">
           <AvatarFallback className="text-xs bg-primary text-primary-foreground">
             {initials}

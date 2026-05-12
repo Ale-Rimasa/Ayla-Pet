@@ -64,6 +64,11 @@ vi.mock('@/lib/email', () => ({
   sendOrderConfirmation: mockSendOrderConfirmation,
 }))
 
+const mockRecordMPPayment = vi.fn()
+vi.mock('@/lib/db/payments', () => ({
+  recordMPPayment: mockRecordMPPayment,
+}))
+
 vi.mock('@/env', () => ({
   env: {
     MP_WEBHOOK_SECRET: 'test-webhook-secret',
@@ -137,12 +142,12 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     mockDecrementStock.mockResolvedValue({ ok: true })
     mockUpdateOrderStatus.mockResolvedValue({ ok: true })
+    mockRecordMPPayment.mockResolvedValue({ ok: true })
     mockSendOrderConfirmation.mockResolvedValue(undefined)
   })
 
   it('valid sig + approved → calls decrementStock, updateOrderStatus("paid"), sendOrderConfirmation', async () => {
-    // Simulate newly inserted row (not duplicate)
-    mockSelect.mockResolvedValue({ data: [{ id: 'payment-row-id' }], error: null })
+    mockRecordMPPayment.mockResolvedValue({ ok: true })
 
     mockFetchPayment.mockResolvedValue({
       ok: true,
@@ -154,13 +159,12 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     expect(res.status).toBe(200)
     expect(mockDecrementStock).toHaveBeenCalledOnce()
-    expect(mockUpdateOrderStatus).toHaveBeenCalledWith('order-uuid-1', 'paid')
+    expect(mockUpdateOrderStatus).toHaveBeenCalledWith('order-uuid-1', 'pending', 'paid')
     expect(mockSendOrderConfirmation).toHaveBeenCalledOnce()
   })
 
   it('valid sig + rejected → 200, no side effects', async () => {
-    // Simulate newly inserted row
-    mockSelect.mockResolvedValue({ data: [{ id: 'payment-row-id' }], error: null })
+    mockRecordMPPayment.mockResolvedValue({ ok: true })
 
     mockFetchPayment.mockResolvedValue({
       ok: true,
@@ -176,21 +180,20 @@ describe('POST /api/webhooks/mercadopago', () => {
     expect(mockSendOrderConfirmation).not.toHaveBeenCalled()
   })
 
-  it('invalid signature → 200, no side effects', async () => {
+  it('invalid signature → 401, no side effects', async () => {
     const req = buildValidRequest(PAYMENT_ID, REQUEST_ID, 'wrong-secret')
 
     const { POST } = await import('@/app/api/webhooks/mercadopago/route')
     const res = await POST(req as any)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(401)
     expect(mockFetchPayment).not.toHaveBeenCalled()
     expect(mockDecrementStock).not.toHaveBeenCalled()
     expect(mockUpdateOrderStatus).not.toHaveBeenCalled()
   })
 
   it('duplicate payment_id (idempotency) → 200, no-op', async () => {
-    // Simulate empty rows = conflict / duplicate (ON CONFLICT DO NOTHING)
-    mockSelect.mockResolvedValue({ data: [], error: null })
+    mockRecordMPPayment.mockResolvedValue({ ok: false, isDuplicate: true, error: 'duplicate_key' })
 
     mockFetchPayment.mockResolvedValue({
       ok: true,

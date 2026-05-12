@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { z } from 'zod'
 import { getOrdersForAdmin } from '@/lib/db/orders'
 import { OrdersTable } from '@/components/admin/OrdersTable'
@@ -19,18 +19,29 @@ const TABS: { label: string; value: string }[] = [
 ]
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; page?: string }>
+  searchParams: Promise<{ status?: string; page?: string; search?: string }>
+}
+
+function buildPedidosHref(params: { status?: string; page?: number; search?: string }) {
+  const qs = new URLSearchParams()
+  if (params.status && params.status !== 'all') qs.set('status', params.status)
+  if (params.search) qs.set('search', params.search)
+  if (params.page && params.page > 1) qs.set('page', String(params.page))
+  const queryString = qs.toString()
+  return queryString ? `/admin/pedidos?${queryString}` : '/admin/pedidos'
 }
 
 export default async function AdminPedidosPage({ searchParams }: PageProps) {
-  const { status, page } = await searchParams
-  const currentPage = Number(page ?? '1') || 1
+  const { status, page, search } = await searchParams
+  const currentPage = z.coerce.number().int().min(1).catch(1).parse(page)
+  const searchQuery = search?.trim() || undefined
 
   const statusParsed = status && status !== 'all' ? orderStatusSchema.safeParse(status) : null
   const validatedStatus: OrderStatus | undefined = statusParsed?.success ? statusParsed.data : undefined
 
   const { data: orders, count } = await getOrdersForAdmin({
     status: validatedStatus,
+    searchQuery,
     page: currentPage,
     pageSize: 20,
   })
@@ -44,7 +55,6 @@ export default async function AdminPedidosPage({ searchParams }: PageProps) {
         <p className="text-muted-foreground text-sm">{count} pedido{count !== 1 ? 's' : ''}</p>
       </div>
 
-      {/* Status tabs */}
       <div className="flex flex-wrap gap-2">
         {TABS.map((tab) => {
           const isActive =
@@ -52,7 +62,7 @@ export default async function AdminPedidosPage({ searchParams }: PageProps) {
           return (
             <Link
               key={tab.value}
-              href={`/admin/pedidos${tab.value !== 'all' ? `?status=${tab.value}` : ''}`}
+              href={buildPedidosHref({ status: tab.value, search: searchQuery })}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-primary text-primary-foreground'
@@ -65,13 +75,12 @@ export default async function AdminPedidosPage({ searchParams }: PageProps) {
         })}
       </div>
 
-      <OrdersTable orders={orders} />
+      <OrdersTable orders={orders} searchQuery={searchQuery} />
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-end gap-2">
           <Link
-            href={`/admin/pedidos?${status ? `status=${status}&` : ''}page=${currentPage - 1}`}
+            href={buildPedidosHref({ status, search: searchQuery, page: currentPage - 1 })}
             aria-disabled={currentPage <= 1}
             className={`rounded-md border px-3 py-1.5 text-sm ${
               currentPage <= 1 ? 'pointer-events-none opacity-50' : 'hover:bg-muted'
@@ -83,7 +92,7 @@ export default async function AdminPedidosPage({ searchParams }: PageProps) {
             Página {currentPage} de {totalPages}
           </span>
           <Link
-            href={`/admin/pedidos?${status ? `status=${status}&` : ''}page=${currentPage + 1}`}
+            href={buildPedidosHref({ status, search: searchQuery, page: currentPage + 1 })}
             aria-disabled={currentPage >= totalPages}
             className={`rounded-md border px-3 py-1.5 text-sm ${
               currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'hover:bg-muted'

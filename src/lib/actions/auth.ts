@@ -1,6 +1,7 @@
 'use server'
 
 import { headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
@@ -54,4 +55,12 @@ export async function loginAction(
   }
 
   redirect('/admin')
+}
+
+export async function logoutAction(): Promise<never> {
+  const supabase = await createClient()
+
+  await supabase.auth.signOut()
+  revalidatePath('/admin', 'layout')
+  redirect('/admin/login')
 }

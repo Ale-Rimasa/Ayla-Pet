@@ -30,9 +30,11 @@ export async function uploadProductImage(
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   await requireAdmin()
   const file = formData.get('file') as File | null
-  const path = formData.get('path') as string | null
-  if (!file || !path) return { ok: false, error: 'missing_params' }
-  return uploadImage('productos', path, file)
+  if (!file) return { ok: false, error: 'missing_params' }
+  // Generate path server-side — never accept client-provided storage paths.
+  const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const safePath = `${crypto.randomUUID()}.${ext}`
+  return uploadImage('productos', safePath, file)
 }
 
 export async function createProduct(
@@ -134,7 +136,7 @@ export async function softDeleteProduct(
 
 export async function createVariant(
   input: CreateVariantInput
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; data?: { id: string }; error?: string }> {
   await requireAdmin()
 
   const parsed = CreateVariantSchema.safeParse(input)
@@ -150,7 +152,11 @@ export async function createVariant(
     .eq('id', parsed.data.product_id)
     .maybeSingle()
 
-  const { error } = await supabase.from('product_variants').insert(parsed.data)
+  const { data: inserted, error } = await supabase
+    .from('product_variants')
+    .insert(parsed.data)
+    .select('id')
+    .single()
 
   if (error) {
     return { ok: false, error: error.message }
@@ -161,7 +167,7 @@ export async function createVariant(
   }
   revalidatePath('/admin/productos')
 
-  return { ok: true }
+  return { ok: true, data: { id: inserted.id } }
 }
 
 export async function updateVariant(

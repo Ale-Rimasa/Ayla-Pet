@@ -157,6 +157,7 @@ describe('createVariant', () => {
     }))
     const { client, chain } = createSupabaseMock({ data: null, error: null })
     chain.maybeSingle = vi.fn().mockResolvedValue({ data: { slug: 'taza' }, error: null })
+    chain.single = vi.fn().mockResolvedValue({ data: { id: 'new-variant-uuid' }, error: null })
     vi.doMock('@/lib/supabase/admin', () => ({
       createAdminClient: vi.fn().mockReturnValue(client),
     }))
@@ -170,7 +171,7 @@ describe('createVariant', () => {
       sort_order: 0,
     })
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual({ ok: true, data: { id: 'new-variant-uuid' } })
     expect(client.from).toHaveBeenCalledWith('product_variants')
     expect(revalidateTag).toHaveBeenCalledWith('producto:taza', {})
   })
