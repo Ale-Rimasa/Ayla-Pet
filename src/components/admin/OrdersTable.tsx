@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/admin/StatusBadge'
 import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector'
+import { useDebounce } from '@/hooks/useDebounce'
 import { formatPrice } from '@/lib/utils'
 import type { Order } from '@/types'
 
@@ -27,29 +28,26 @@ export function OrdersTable({ orders, searchQuery = '' }: OrdersTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [query, setQuery] = useState(searchQuery)
+  const debouncedQuery = useDebounce(query, 300)
 
   useEffect(() => {
     setQuery(searchQuery)
   }, [searchQuery])
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString())
-      const trimmed = query.trim()
+    const params = new URLSearchParams(searchParams.toString())
+    const trimmed = debouncedQuery.trim()
 
-      if (trimmed) {
-        params.set('search', trimmed)
-      } else {
-        params.delete('search')
-      }
+    if (trimmed) {
+      params.set('search', trimmed)
+    } else {
+      params.delete('search')
+    }
 
-      params.delete('page')
-      const qs = params.toString()
-      router.replace(qs ? `/admin/pedidos?${qs}` : '/admin/pedidos')
-    }, 300)
-
-    return () => window.clearTimeout(timeout)
-  }, [query, router, searchParams])
+    params.delete('page')
+    const qs = params.toString()
+    router.replace(qs ? `/admin/pedidos?${qs}` : '/admin/pedidos')
+  }, [debouncedQuery, router, searchParams])
 
   return (
     <div className="space-y-3">

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useTransition } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
@@ -39,12 +39,13 @@ import { ImageUploader } from '@/components/admin/ImageUploader'
 import {
   createProduct,
   updateProduct,
+  softDeleteProduct,
   uploadProductImage,
   createVariant,
   updateVariant,
   deleteVariant,
 } from '@/lib/actions/products'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, slugify } from '@/lib/utils'
 import type { Product, Category, ProductVariant } from '@/types'
 
 const productFormSchema = z.object({
@@ -67,17 +68,6 @@ interface ProductSheetProps {
   categories: Category[]
   open: boolean
   onClose: () => void
-}
-
-function toSlug(name: string) {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
 }
 
 function toVariantForm(variant: ProductVariant): VariantForm {
@@ -150,7 +140,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
   function handleNameChange(e: ChangeEvent<HTMLInputElement>) {
     setValue('name', e.target.value)
     if (!isEdit) {
-      setValue('slug', toSlug(e.target.value))
+      setValue('slug', slugify(e.target.value))
     }
   }
 
@@ -218,6 +208,8 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
         sort_order: 0,
       })
       if (!variantResult.ok) {
+        // Rollback: soft-delete the orphan product so it doesn't pollute the catalogue
+        await softDeleteProduct(productResult.data.id)
         toast.error(variantResult.error ?? 'Error al crear variante')
         return
       }
@@ -343,7 +335,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
             <Label htmlFor="prod-name">Nombre *</Label>
             <Input
               id="prod-name"
-              {...register('name', { required: 'El nombre es requerido' })}
+              {...register('name')}
               onChange={handleNameChange}
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
@@ -353,7 +345,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
             <Label htmlFor="prod-slug">Slug *</Label>
             <Input
               id="prod-slug"
-              {...register('slug', { required: 'El slug es requerido' })}
+              {...register('slug')}
             />
             {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
           </div>

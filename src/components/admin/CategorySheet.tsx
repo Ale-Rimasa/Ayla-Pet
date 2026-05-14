@@ -30,6 +30,7 @@ import {
   updateCategory,
   uploadCategoryImage,
 } from '@/lib/actions/categories'
+import { slugify } from '@/lib/utils'
 import type { Category } from '@/types'
 
 const categoryFormSchema = z.object({
@@ -47,16 +48,6 @@ interface CategorySheetProps {
   onClose: () => void
 }
 
-function toSlug(name: string) {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-}
 
 export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -90,12 +81,12 @@ export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
       description: category?.description ?? '',
       sort_order: String(category?.sortOrder ?? 0),
     })
-  }, [category?.id, reset])
+  }, [category, reset])
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     setValue('name', e.target.value)
     if (!isEdit) {
-      setValue('slug', toSlug(e.target.value))
+      setValue('slug', slugify(e.target.value))
     }
   }
 
@@ -220,7 +211,7 @@ export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
                       placeholder="Ej: Cerámica"
                       className="h-11 pl-9"
                       aria-invalid={!!errors.name}
-                      {...register('name', { required: 'El nombre es requerido' })}
+                      {...register('name')}
                       onChange={handleNameChange}
                     />
                   </div>
@@ -248,7 +239,7 @@ export function CategorySheet({ category, open, onClose }: CategorySheetProps) {
                       placeholder="ceramica"
                       className="h-11 pl-9"
                       aria-invalid={!!errors.slug}
-                      {...register('slug', { required: 'El slug es requerido' })}
+                      {...register('slug')}
                     />
                   </div>
                   {errors.slug && (

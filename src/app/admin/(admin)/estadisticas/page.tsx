@@ -1,10 +1,11 @@
 import { DollarSign, ShoppingCart, Package } from 'lucide-react'
-import { getStats } from '@/lib/db/stats'
+import { getStats, getTopProducts, getTopCustomers } from '@/lib/db/stats'
 import { KPICard } from '@/components/admin/KPICard'
 import { StatusBadge } from '@/components/admin/StatusBadge'
 import { LineChart } from '@/components/admin/charts/LineChart'
 import { PieChart } from '@/components/admin/charts/PieChart'
 import { DonutChart } from '@/components/admin/charts/DonutChart'
+import { BarChart } from '@/components/admin/charts/BarChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -18,8 +19,14 @@ import { formatPrice } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminEstadisticasPage() {
-  const stats = await getStats()
+  const [stats, topProducts, topCustomers] = await Promise.all([
+    getStats(),
+    getTopProducts(10),
+    getTopCustomers(10),
+  ])
 
   return (
     <div className="space-y-6">
@@ -86,6 +93,49 @@ export default async function AdminEstadisticasPage() {
             ) : (
               <div className="flex h-[250px] items-center justify-center text-muted-foreground text-sm">
                 Sin pedidos aún
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Productos más vendidos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topProducts.length > 0 ? (
+              <BarChart
+                data={topProducts.map((product) => ({
+                  label: `${product.productName} ${product.variantName}`.trim(),
+                  value: product.qtySold,
+                }))}
+              />
+            ) : (
+              <div className="flex h-[250px] items-center justify-center text-muted-foreground text-sm">
+                Sin productos vendidos aún
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mejores clientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topCustomers.length > 0 ? (
+              <BarChart
+                data={topCustomers.map((customer) => ({
+                  label: customer.name || customer.email,
+                  value: customer.totalRevenue,
+                }))}
+                valueFormatter={formatPrice}
+              />
+            ) : (
+              <div className="flex h-[250px] items-center justify-center text-muted-foreground text-sm">
+                Sin clientes aún
               </div>
             )}
           </CardContent>

@@ -43,3 +43,6 @@ supabase/.temp
 react doctor/
 test-results/
 playwright-report/
+
+# playwright auth state (contains session tokens — never commit)
+.playwright/

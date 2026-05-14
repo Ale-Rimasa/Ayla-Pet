@@ -14,7 +14,7 @@ export function verifyMPSignature(
   const parts = Object.fromEntries(
     xSignature.split(',').map((part) => {
       const [k, v] = part.split('=')
-      return [k, v]
+      return [k.trim(), v?.trim()]
     })
   )
   const ts = parts['ts']

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth'
 import type { Product, Order } from '@/types'
 
 export interface StatsData {
@@ -17,8 +18,34 @@ export interface StatsData {
   recentOrders: Order[]
 }
 
+export interface TopProductRow {
+  productName: string
+  variantName: string
+  qtySold: number
+  revenue: number
+}
+
+export interface TopCustomerRow {
+  email: string
+  name: string
+  orderCount: number
+  totalRevenue: number
+}
+
 type RevenueRow = { total: number; created_at: string }
 type SalesRow = { total: number; created_at: string; status: string }
+type TopProductRpcRow = {
+  product_name: string
+  variant_name: string
+  qty_sold: number
+  revenue: number
+}
+type TopCustomerRpcRow = {
+  email: string
+  name: string
+  order_count: number
+  total_revenue: number
+}
 type CategoryValueRow = {
   price: number
   products: { categories: { name: string } | null } | null
@@ -79,6 +106,7 @@ type RecentOrderRow = {
 }
 
 export async function getStats(): Promise<StatsData> {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const now = new Date()
@@ -322,4 +350,42 @@ export async function getStats(): Promise<StatsData> {
     lowStockProducts,
     recentOrders,
   }
+}
+
+export async function getTopProducts(limit = 10): Promise<TopProductRow[]> {
+  // Defense-in-depth: service-role bypasses RLS — require admin session.
+  await requireAdmin()
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.rpc('get_top_products', { p_limit: limit })
+
+  if (error) {
+    console.error('[stats] getTopProducts failed:', error.message)
+    return []
+  }
+
+  return ((data as TopProductRpcRow[] | null) ?? []).map((row) => ({
+    productName: row.product_name,
+    variantName: row.variant_name,
+    qtySold: row.qty_sold,
+    revenue: row.revenue,
+  }))
+}
+
+export async function getTopCustomers(limit = 10): Promise<TopCustomerRow[]> {
+  // Defense-in-depth: service-role bypasses RLS — require admin session.
+  await requireAdmin()
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.rpc('get_top_customers', { p_limit: limit })
+
+  if (error) {
+    console.error('[stats] getTopCustomers failed:', error.message)
+    return []
+  }
+
+  return ((data as TopCustomerRpcRow[] | null) ?? []).map((row) => ({
+    email: row.email,
+    name: row.name,
+    orderCount: row.order_count,
+    totalRevenue: row.total_revenue,
+  }))
 }

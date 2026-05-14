@@ -32,11 +32,11 @@ const activeItems = [
   { label: 'Productos', href: '/admin/productos', icon: Package },
   { label: 'Categorías', href: '/admin/categorias', icon: Tags },
   { label: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
+  { label: 'Clientes', href: '/admin/clientes', icon: Users },
   { label: 'Estadísticas', href: '/admin/estadisticas', icon: BarChart2 },
 ]
 
 const disabledItems = [
-  { label: 'Clientes', icon: Users },
   { label: 'Descuentos', icon: Percent },
   { label: 'Configuración', icon: Settings },
 ]
@@ -90,6 +90,7 @@ export function AdminSidebar() {
                 <SidebarMenuItem key={item.label}>
                   <SidebarMenuButton
                     className="opacity-50 pointer-events-none"
+                    aria-disabled="true"
                     render={
                       <span>
                         <item.icon />
