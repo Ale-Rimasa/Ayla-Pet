@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
   const shippingCost = SHIPPING_COSTS[shippingMethod]
 
   const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const variantIds = items.map((item) => item.variantId)
 
   const { data: variants, error: variantError } = await supabase
@@ -115,6 +118,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await createOrder({
+    userId: session?.user.id ?? null,
     customer,
     shipping,
     items: orderItems,

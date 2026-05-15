@@ -1,0 +1,54 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const USER_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+
+describe('requireCustomer', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('redirects unauthenticated customers to login with encoded next path', async () => {
+    const redirect = vi.fn((path: string) => {
+      throw new Error(`NEXT_REDIRECT:${path}`)
+    })
+    vi.doMock('next/navigation', () => ({ redirect }))
+    vi.doMock('@/lib/supabase/server', () => ({
+      createClient: vi.fn().mockResolvedValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: null },
+            error: { message: 'missing session' },
+          }),
+        },
+      }),
+    }))
+
+    const { requireCustomer } = await import('@/lib/auth')
+
+    await expect(requireCustomer('/cuenta/pedidos')).rejects.toThrow(
+      'NEXT_REDIRECT:/cuenta/login?next=%2Fcuenta%2Fpedidos'
+    )
+    expect(redirect).toHaveBeenCalledWith(
+      '/cuenta/login?next=%2Fcuenta%2Fpedidos'
+    )
+  })
+
+  it('returns the authenticated user', async () => {
+    const user = { id: USER_ID, email: 'ana@example.com' }
+    vi.doMock('next/navigation', () => ({ redirect: vi.fn() }))
+    vi.doMock('@/lib/supabase/server', () => ({
+      createClient: vi.fn().mockResolvedValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user },
+            error: null,
+          }),
+        },
+      }),
+    }))
+
+    const { requireCustomer } = await import('@/lib/auth')
+
+    await expect(requireCustomer('/cuenta')).resolves.toEqual(user)
+  })
+})

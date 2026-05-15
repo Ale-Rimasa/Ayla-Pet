@@ -3,6 +3,25 @@ import type { OrderStatus } from '@/types'
 
 const slugRegex = /^[a-z0-9-]+$/
 
+// Customer Auth
+
+export const SignInSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+})
+
+export const SignUpSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Ingresá tu nombre completo')
+    .max(80, 'Nombre demasiado largo'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+})
+
+export type SignInValues = z.infer<typeof SignInSchema>
+export type SignUpValues = z.infer<typeof SignUpSchema>
+
 // ─── Category ────────────────────────────────────────────────────────────────
 
 export const CreateCategorySchema = z.object({

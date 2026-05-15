@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { headers } from 'next/headers'
 import { requireAdmin } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { updateOrderStatus as dbUpdateOrderStatus, getOrderStatusById } from '@/lib/db/orders'
 import { UpdateOrderStatusSchema } from '@/lib/validations'
@@ -81,6 +82,22 @@ export async function getOrderStatus(
 ): Promise<{ status: OrderStatus } | null> {
   const parsed = OrderIdSchema.safeParse(orderId)
   if (!parsed.success) return null
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', parsed.data)
+      .maybeSingle()
+
+    if (error || !data) return null
+    return { status: (data as { status: OrderStatus }).status }
+  }
 
   // Rate-limit by IP — public endpoint; UUID is capability token but still DoS-able
   const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'

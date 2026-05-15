@@ -9,7 +9,7 @@ export function createMockChain<T = unknown>(response: MockResponse<T>) {
   const chainMethods = [
     'from', 'select', 'insert', 'update', 'delete',
     'eq', 'neq', 'is', 'in', 'gte', 'lte', 'gt', 'lt',
-    'order', 'range', 'limit', 'filter',
+    'order', 'range', 'limit', 'filter', 'or',
   ]
   chainMethods.forEach((method) => {
     chain[method] = vi.fn().mockReturnValue(chain)
@@ -45,6 +45,7 @@ export type MockChain<T = unknown> = {
   order: ReturnType<typeof vi.fn>
   range: ReturnType<typeof vi.fn>
   limit: ReturnType<typeof vi.fn>
+  or: ReturnType<typeof vi.fn>
   single: ReturnType<typeof vi.fn>
   maybeSingle: ReturnType<typeof vi.fn>
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Search, User, Truck, Star, Heart } from 'lucide-react'
+import { Search, Truck, Star, Heart } from 'lucide-react'
 import { CartIcon } from './CartIcon'
+import { AccountButton } from '@/components/auth/AccountButton'
 import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
 
 export function Navbar() {
@@ -90,14 +91,7 @@ export function Navbar() {
               />
             </div>
 
-            {/* User icon */}
-            <Link
-              href="/admin"
-              className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F5EFE6] transition-colors"
-              aria-label="Mi cuenta"
-            >
-              <User className="h-4.5 w-4.5 text-[#6B6258]" aria-hidden="true" />
-            </Link>
+            <AccountButton />
 
             {/* Cart */}
             <CartIcon />

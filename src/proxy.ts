@@ -33,6 +33,21 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAdminPath = pathname.startsWith('/admin')
   const isLoginPage = pathname === '/admin/login'
+  const isAccountPath = pathname === '/cuenta' || pathname.startsWith('/cuenta/')
+  const isAccountAuthPage =
+    pathname === '/cuenta/login' ||
+    pathname === '/cuenta/registro' ||
+    pathname === '/cuenta/verificar'
+
+  if (isAccountPath && !isAccountAuthPage && !user) {
+    const loginUrl = new URL('/cuenta/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  if (pathname === '/cuenta/login' && user) {
+    return NextResponse.redirect(new URL('/cuenta', request.url))
+  }
 
   if (isAdminPath && !isLoginPage) {
     if (!user) {
@@ -56,6 +71,7 @@ export async function proxy(request: NextRequest) {
 export const proxyConfig = {
   matcher: [
     '/admin/:path*',
+    '/cuenta/:path*',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

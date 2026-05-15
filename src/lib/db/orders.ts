@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth'
 import type { Order, OrderItem, OrderStatus, CreateOrderPayload } from '@/types'
 
@@ -118,6 +119,7 @@ export async function createOrder(
   const supabase = createAdminClient()
 
   const params = {
+    p_user_id: payload.userId ?? null,
     p_customer_name: payload.customer.name,
     p_customer_email: payload.customer.email,
     p_customer_phone: payload.customer.phone,
@@ -140,7 +142,14 @@ export async function createOrder(
     })),
   }
 
-  const { data, error } = await supabase.rpc('create_order', params)
+  // RPC type generation predates optional p_user_id; regenerate DB types after migration 018.
+  type CreateOrderRpc = (
+    fn: 'create_order',
+    args: typeof params
+  ) => Promise<{ data: string | null; error: { message: string } | null }>
+
+  const rpc = supabase.rpc as unknown as CreateOrderRpc
+  const { data, error } = await rpc('create_order', params)
 
   if (error) {
     return { ok: false, error: error.message }
@@ -216,6 +225,49 @@ export async function getOrdersForAdmin(
   const orders = (data as unknown as DbOrder[] ?? []).map(mapOrder)
 
   return { data: orders, count: count ?? 0 }
+}
+
+export async function getOrdersForCustomer(
+  userId: string,
+  opts: { page?: number; pageSize?: number } = {}
+): Promise<{ data: Order[]; count: number }> {
+  const { page = 1, pageSize = 20 } = opts
+  const supabase = await createClient()
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, count, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)', { count: 'exact' })
+    .eq('user_id' as never, userId)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error || !data) return { data: [], count: 0 }
+
+  return {
+    data: (data as unknown as DbOrder[]).map(mapOrder),
+    count: count ?? 0,
+  }
+}
+
+export async function getOrderForCustomer(
+  id: string,
+  user: { id: string; email: string }
+): Promise<Order | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .eq('id', id)
+    .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+    .maybeSingle()
+
+  if (error || !data) return null
+
+  return mapOrder(data as unknown as DbOrder)
 }
 
 export async function getOrderStatusHistory(

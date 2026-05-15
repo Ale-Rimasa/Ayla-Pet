@@ -104,6 +104,7 @@ export interface CreateOrderItemPayload {
 }
 
 export interface CreateOrderPayload {
+  userId?: string | null
   customer: CustomerInfo
   shipping: ShippingAddress
   items: CreateOrderItemPayload[]

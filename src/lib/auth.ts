@@ -36,3 +36,18 @@ export async function requireAdmin() {
 
   return user!
 }
+
+export async function requireCustomer(nextPath = '/cuenta') {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    redirect(`/cuenta/login?next=${encodeURIComponent(nextPath)}`)
+  }
+
+  return user!
+}
