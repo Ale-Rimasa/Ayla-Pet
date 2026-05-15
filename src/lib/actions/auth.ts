@@ -5,10 +5,16 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireCustomer } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { claimGuestOrders } from '@/lib/db/profiles'
 import { SignInSchema, SignUpSchema } from '@/lib/validations'
 import type { SignInValues, SignUpValues } from '@/lib/validations'
+
+const UpdateProfileSchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(80, 'Nombre demasiado largo'),
+})
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -124,4 +130,25 @@ export async function signOutAction(): Promise<never> {
 
   await supabase.auth.signOut()
   redirect('/')
+}
+
+export async function updateProfileAction(
+  input: { name: string }
+): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireCustomer()
+
+  const parsed = UpdateProfileSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: 'validation_error' }
+
+  // Service-role required: RLS restricts profiles UPDATE to service_role only.
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ full_name: parsed.data.name })
+    .eq('id', user.id)
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/cuenta')
+  return { ok: true }
 }

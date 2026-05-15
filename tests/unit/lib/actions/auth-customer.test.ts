@@ -129,3 +129,59 @@ describe('customer auth actions', () => {
     expect(redirect).toHaveBeenCalledWith('/')
   })
 })
+
+describe('updateProfileAction', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('returns validation_error when name is too short', async () => {
+    vi.doMock('next/navigation', () => ({ redirect: vi.fn() }))
+    vi.doMock('@/lib/auth', () => ({ requireCustomer: vi.fn().mockResolvedValue({ id: USER_ID }) }))
+    vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
+    vi.doMock('next/cache', () => ({ revalidatePath: vi.fn() }))
+
+    const { updateProfileAction } = await import('@/lib/actions/auth')
+    const result = await updateProfileAction({ name: 'X' })
+
+    expect(result).toEqual({ ok: false, error: 'validation_error' })
+  })
+
+  it('updates full_name and revalidates on valid input', async () => {
+    vi.doMock('next/navigation', () => ({ redirect: vi.fn() }))
+    vi.doMock('@/lib/auth', () => ({ requireCustomer: vi.fn().mockResolvedValue({ id: USER_ID }) }))
+    const revalidatePath = vi.fn()
+    vi.doMock('next/cache', () => ({ revalidatePath, revalidateTag: vi.fn() }))
+
+    const update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+    const from = vi.fn().mockReturnValue({ update })
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: vi.fn().mockReturnValue({ from }),
+    }))
+
+    const { updateProfileAction } = await import('@/lib/actions/auth')
+    const result = await updateProfileAction({ name: 'Ana García' })
+
+    expect(result).toEqual({ ok: true })
+    expect(from).toHaveBeenCalledWith('profiles')
+    expect(update).toHaveBeenCalledWith({ full_name: 'Ana García' })
+    expect(revalidatePath).toHaveBeenCalledWith('/cuenta')
+  })
+
+  it('returns error when DB update fails', async () => {
+    vi.doMock('next/navigation', () => ({ redirect: vi.fn() }))
+    vi.doMock('@/lib/auth', () => ({ requireCustomer: vi.fn().mockResolvedValue({ id: USER_ID }) }))
+    vi.doMock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
+
+    const eq = vi.fn().mockResolvedValue({ error: { message: 'DB error' } })
+    const update = vi.fn().mockReturnValue({ eq })
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ update }) }),
+    }))
+
+    const { updateProfileAction } = await import('@/lib/actions/auth')
+    const result = await updateProfileAction({ name: 'Ana García' })
+
+    expect(result).toEqual({ ok: false, error: 'DB error' })
+  })
+})
