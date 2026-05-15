@@ -1,41 +1,75 @@
-PS D:\Ecommerce Pet Laser> pnpm build
+## Error Type
+Console Error
 
-> pt-laser@0.1.0 build D:\Ecommerce Pet Laser
-> next build
-
-▲ Next.js 16.2.4 (Turbopack)
-- Environments: .env.local
-
-  Creating an optimized production build ...
-
-> Build error occurred
-Error: Turbopack build failed with 2 errors:
-./src/components/auth/LoginForm.tsx
-Reading source code for parsing failed
-An unexpected error happened while trying to read the source code to parse: failed to convert rope into string
-
-Caused by:
-- invalid utf-8 sequence of 1 bytes from index 1032
-
-Import trace:
-  Server Component:
-    ./src/components/auth/LoginForm.tsx
-    ./src/app/(storefront)/(auth)/cuenta/login/page.tsx
+## Error Message
+Base UI: A component is changing the uncontrolled value state of Select to be controlled.
+Elements should not switch from uncontrolled to controlled (or vice versa).
+Decide between using a controlled or uncontrolled Select element for the lifetime of the component.
+The nature of the state is determined during the first render. It's considered controlled if the value is not `undefined`.
+More info: https://fb.me/react-controlled-components
 
 
-./src/components/auth/SignUpForm.tsx
-Reading source code for parsing failed
-An unexpected error happened while trying to read the source code to parse: failed to convert rope into string
+    at createConsoleError (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_136b7it._.js:2333:71)
+    at handleConsoleError (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_136b7it._.js:3119:54)
+    at console.error (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_136b7it._.js:3266:57)
+    at error (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/node_modules__pnpm_112bis2._.js:284:21)
+    at useControlled.useEffect (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/node_modules__pnpm_112bis2._.js:569:296)
+    at Object.react_stack_bottom_frame (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:15087:22)
+    at runWithFiberInDEV (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:965:74)
+    at commitHookEffectListMount (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:7255:167)
+    at commitHookPassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:7290:60)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8689:33)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8750:17)
+    at recursivelyTraversePassiveMountEffects (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8676:316)
+    at commitPassiveMountOnFiber (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/0qvh_next_dist_compiled_react-dom_03~j2aq._.js:8688:17)
+    at ProductSheet (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/src_0q-ulo9._.js:1623:378)
+    at ProductsPageClient (file://D:/Ecommerce Pet Laser/.next/dev/static/chunks/src_0q-ulo9._.js:3123:326)
+    at AdminProductosPage (src\app\admin\(admin)\productos\page.tsx:25:5)
 
-Caused by:
-- invalid utf-8 sequence of 1 bytes from index 958
+## Code Frame
+  23 |
+  24 |   return (
+> 25 |     <ProductsPageClient
+     |     ^
+  26 |       products={products}
+  27 |       categories={categories}
+  28 |       count={count}
 
-Import trace:
-  Server Component:
-    ./src/components/auth/SignUpForm.tsx
-    ./src/app/(storefront)/(auth)/cuenta/registro/page.tsx
-
-
-    at ignore-listed frames
- ELIFECYCLE  Command failed with exit code 1.
-PS D:\Ecommerce Pet Laser>
+Next.js version: 16.2.4 (Turbopack)

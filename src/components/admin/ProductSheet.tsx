@@ -454,7 +454,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                       Categoría *
                     </Label>
                     <Select
-                      value={watch('category_id') || undefined}
+                      value={watch('category_id') || ''}
                       onValueChange={(v) => v && setValue('category_id', v)}
                     >
                       <SelectTrigger
@@ -464,7 +464,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                       >
                         <SelectValue placeholder="Seleccionar categoría" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
