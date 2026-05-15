@@ -23,7 +23,7 @@ interface PedidoDetailPageProps {
 const ORDER_STEPS: { status: OrderStatus; label: string }[] = [
   { status: 'pending', label: 'Pendiente' },
   { status: 'paid', label: 'Pagado' },
-  { status: 'processing', label: 'En preparaciÛn' },
+  { status: 'processing', label: 'En preparaci√≥n' },
   { status: 'shipped', label: 'Enviado' },
   { status: 'delivered', label: 'Entregado' },
 ]
@@ -38,14 +38,14 @@ export default async function PedidoDetailPage({ params }: PedidoDetailPageProps
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <Link href="/cuenta/pedidos" className="mb-6 inline-flex text-sm font-semibold text-[#B68A57] hover:underline">
-        ? Volver a pedidos
+        ‚Üê Volver a pedidos
       </Link>
 
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#B68A57]">Pedido</p>
           <h1 className="mt-2 font-heading text-3xl font-bold text-[#111111]">#{order.id.slice(0, 8)}</h1>
-          <p className="mt-1 text-sm text-[#6B6258]">{new Date(order.createdAt).toLocaleString('es-AR')} ∑ {order.status}</p>
+          <p className="mt-1 text-sm text-[#6B6258]">{new Date(order.createdAt).toLocaleString('es-AR')} ¬∑ {order.status}</p>
         </div>
         <p className="text-2xl font-bold text-[#111111]">{formatPrice(order.total)}</p>
       </div>
@@ -61,7 +61,7 @@ export default async function PedidoDetailPage({ params }: PedidoDetailPageProps
                 <div key={item.id} className="flex justify-between gap-4">
                   <div>
                     <p className="font-medium text-[#111111]">{item.productName}</p>
-                    <p className="text-sm text-[#6B6258]">{item.variantName} ∑ Cantidad {item.quantity}</p>
+                    <p className="text-sm text-[#6B6258]">{item.variantName} ¬∑ Cantidad {item.quantity}</p>
                   </div>
                   <p className="font-semibold text-[#111111]">{formatPrice(item.subtotal)}</p>
                 </div>
@@ -69,7 +69,7 @@ export default async function PedidoDetailPage({ params }: PedidoDetailPageProps
               <Separator />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-[#6B6258]">Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-[#6B6258]">EnvÌo</span><span>{order.shippingCost === 0 ? 'Gratis' : formatPrice(order.shippingCost)}</span></div>
+                <div className="flex justify-between"><span className="text-[#6B6258]">Env√≠o</span><span>{order.shippingCost === 0 ? 'Gratis' : formatPrice(order.shippingCost)}</span></div>
                 <div className="flex justify-between text-base font-semibold text-[#111111]"><span>Total</span><span>{formatPrice(order.total)}</span></div>
               </div>
             </CardContent>
@@ -102,7 +102,7 @@ export default async function PedidoDetailPage({ params }: PedidoDetailPageProps
 
         <Card className="h-fit border-[#E7DCCF] bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading text-xl text-[#111111]">EnvÌo</CardTitle>
+            <CardTitle className="font-heading text-xl text-[#111111]">Env√≠o</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>

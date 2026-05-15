@@ -13,7 +13,7 @@ export default function RegistroPage() {
       <Card className="w-full border-[#E7DCCF] bg-white shadow-sm">
         <CardHeader className="text-center">
           <CardTitle className="font-heading text-2xl text-[#111111]">Crear cuenta</CardTitle>
-          <p className="text-sm text-[#6B6258]">Guard· tus pedidos y recuper· compras como corresponde.</p>
+          <p className="text-sm text-[#6B6258]">Guard√° tus pedidos y recuper√° compras como corresponde.</p>
         </CardHeader>
         <CardContent>
           <SignUpForm />

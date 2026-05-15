@@ -38,8 +38,8 @@ export default async function PedidosPage({ searchParams }: PedidosPageProps) {
           <CardContent className="flex flex-col items-center gap-4 py-12">
             <Package className="h-10 w-10 text-[#B68A57]" aria-hidden="true" />
             <div>
-              <p className="font-medium text-[#111111]">TodavÌa no hay pedidos.</p>
-              <p className="mt-1 text-sm text-[#6B6258]">ElegÌ una pieza personalizada y la vas a ver ac·.</p>
+              <p className="font-medium text-[#111111]">Todav√≠a no hay pedidos.</p>
+              <p className="mt-1 text-sm text-[#6B6258]">Eleg√≠ una pieza personalizada y la vas a ver ac√°.</p>
             </div>
             <Link href="/productos" className="inline-flex h-9 items-center justify-center rounded-lg bg-[#111111] px-4 text-sm font-medium text-white hover:bg-[#111111]/90">
               Ir a la tienda
@@ -53,7 +53,7 @@ export default async function PedidosPage({ searchParams }: PedidosPageProps) {
               <CardHeader className="flex-row items-center justify-between gap-4">
                 <div>
                   <CardTitle className="font-heading text-lg text-[#111111]">Pedido #{order.id.slice(0, 8)}</CardTitle>
-                  <p className="mt-1 text-sm text-[#6B6258]">{new Date(order.createdAt).toLocaleDateString('es-AR')} ∑ {order.status}</p>
+                  <p className="mt-1 text-sm text-[#6B6258]">{new Date(order.createdAt).toLocaleDateString('es-AR')} ¬∑ {order.status}</p>
                 </div>
                 <p className="font-semibold text-[#111111]">{formatPrice(order.total)}</p>
               </CardHeader>
@@ -66,8 +66,8 @@ export default async function PedidosPage({ searchParams }: PedidosPageProps) {
           ))}
 
           <div className="flex justify-center gap-2 pt-4">
-            {hasPrevious && <Link className="inline-flex h-8 items-center justify-center rounded-lg border border-[#E7DCCF] px-3 text-sm font-medium hover:bg-[#FAF7F2]" href={`/cuenta/pedidos?page=${page - 1}`}>? Anterior</Link>}
-            {hasNext && <Link className="inline-flex h-8 items-center justify-center rounded-lg border border-[#E7DCCF] px-3 text-sm font-medium hover:bg-[#FAF7F2]" href={`/cuenta/pedidos?page=${page + 1}`}>Siguiente ?</Link>}
+            {hasPrevious && <Link className="inline-flex h-8 items-center justify-center rounded-lg border border-[#E7DCCF] px-3 text-sm font-medium hover:bg-[#FAF7F2]" href={`/cuenta/pedidos?page=${page - 1}`}>‚Üê Anterior</Link>}
+            {hasNext && <Link className="inline-flex h-8 items-center justify-center rounded-lg border border-[#E7DCCF] px-3 text-sm font-medium hover:bg-[#FAF7F2]" href={`/cuenta/pedidos?page=${page + 1}`}>Siguiente ‚Üí</Link>}
           </div>
         </div>
       )}

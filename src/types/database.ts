@@ -186,6 +186,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -205,6 +206,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -224,6 +226,7 @@ export type Database = {
           subtotal?: number
           total?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -427,6 +430,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_guest_orders: {
+        Args: { p_email: string; p_user_id: string }
+        Returns: number
+      }
       create_order: {
         Args: {
           p_customer_email: string

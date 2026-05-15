@@ -1,0 +1,41 @@
+PS D:\Ecommerce Pet Laser> pnpm build
+
+> pt-laser@0.1.0 build D:\Ecommerce Pet Laser
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 2 errors:
+./src/components/auth/LoginForm.tsx
+Reading source code for parsing failed
+An unexpected error happened while trying to read the source code to parse: failed to convert rope into string
+
+Caused by:
+- invalid utf-8 sequence of 1 bytes from index 1032
+
+Import trace:
+  Server Component:
+    ./src/components/auth/LoginForm.tsx
+    ./src/app/(storefront)/(auth)/cuenta/login/page.tsx
+
+
+./src/components/auth/SignUpForm.tsx
+Reading source code for parsing failed
+An unexpected error happened while trying to read the source code to parse: failed to convert rope into string
+
+Caused by:
+- invalid utf-8 sequence of 1 bytes from index 958
+
+Import trace:
+  Server Component:
+    ./src/components/auth/SignUpForm.tsx
+    ./src/app/(storefront)/(auth)/cuenta/registro/page.tsx
+
+
+    at ignore-listed frames
+ ELIFECYCLE  Command failed with exit code 1.
+PS D:\Ecommerce Pet Laser>

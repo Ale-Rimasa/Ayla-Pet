@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <Card className="w-full border-[#E7DCCF] bg-white shadow-sm">
         <CardHeader className="text-center">
           <CardTitle className="font-heading text-2xl text-[#111111]">Ingresar</CardTitle>
-          <p className="text-sm text-[#6B6258]">Entr· para ver tus pedidos y datos de cuenta.</p>
+          <p className="text-sm text-[#6B6258]">Entr√° para ver tus pedidos y datos de cuenta.</p>
         </CardHeader>
         <CardContent>
           <LoginForm nextPath={next ?? '/cuenta'} />

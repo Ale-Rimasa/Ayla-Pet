@@ -6,7 +6,22 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import {
+  Archive,
+  Banknote,
+  ImageIcon,
+  Layers3,
+  Link2,
+  LoaderCircle,
+  Package,
+  Pencil,
+  Plus,
+  Save,
+  Star,
+  Tag,
+  Trash2,
+  X,
+} from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +35,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -27,7 +43,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -312,247 +327,423 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
 
   return (
     <>
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{isEdit ? 'Editar producto' : 'Nuevo producto'}</SheetTitle>
-        </SheetHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-          <div className="space-y-2">
-            <Label>Imagen</Label>
-            <ImageUploader
-              currentUrl={currentImageUrl}
-              onFileSelect={(file) => setPendingFile(file)}
-              onRemove={() => {
-                setPendingFile(null)
-                setCurrentImageUrl(undefined)
-              }}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="prod-name">Nombre *</Label>
-            <Input
-              id="prod-name"
-              {...register('name')}
-              onChange={handleNameChange}
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="prod-slug">Slug *</Label>
-            <Input
-              id="prod-slug"
-              {...register('slug')}
-            />
-            {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Categoría *</Label>
-            <Select
-              value={watch('category_id') || undefined}
-              onValueChange={(v) => v && setValue('category_id', v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="prod-price">Precio base (en pesos)</Label>
-              <Input
-                id="prod-price"
-                type="number"
-                min="0"
-                step="1"
-                {...register('price_pesos')}
-              />
-              {errors.price_pesos && <p className="text-xs text-destructive">{errors.price_pesos.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="prod-stock">Stock base</Label>
-              <Input
-                id="prod-stock"
-                type="number"
-                min="0"
-                step="1"
-                {...register('stock')}
-              />
-              {errors.stock && <p className="text-xs text-destructive">{errors.stock.message}</p>}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="prod-desc">Descripción</Label>
-            <Textarea id="prod-desc" rows={3} {...register('description')} />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="prod-featured"
-              type="checkbox"
-              {...register('featured')}
-              className="h-4 w-4 rounded border-border accent-primary"
-            />
-            <Label htmlFor="prod-featured">Producto destacado</Label>
-          </div>
-
-          <Separator />
-
-          <section className="space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold">Variantes</h3>
-              <p className="text-xs text-muted-foreground">
-                Nombre, precio y stock por combinación vendible.
-              </p>
-            </div>
-
-            {!product ? (
-              <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                Guardá el producto para administrar variantes adicionales.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {variants.length === 0 ? (
-                  <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                    Sin variantes — agregá la primera
-                  </p>
-                ) : (
-                  variants.map((variant) => (
-                    <div key={variant.id} className="rounded-md border p-2">
-                      {editingVariantId === variant.id ? (
-                        <VariantInputs
-                          value={editingVariant}
-                          onChange={setEditingVariant}
-                          disabled={isVariantPending}
-                          actions={
-                            <>
-                              <Button
-                                type="button"
-                                size="icon-sm"
-                                onClick={() => handleUpdateVariant(variant.id)}
-                                disabled={isVariantPending}
-                                aria-label="Guardar variante"
-                              >
-                                <Save className="h-3.5 w-3.5" aria-hidden="true" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="icon-sm"
-                                variant="ghost"
-                                onClick={() => setEditingVariantId(null)}
-                                aria-label="Cancelar edición"
-                              >
-                                <X className="h-3.5 w-3.5" aria-hidden="true" />
-                              </Button>
-                            </>
-                          }
-                        />
-                      ) : (
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-medium">{variant.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatPrice(variant.price)} · Stock {variant.stock}
-                            </p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              type="button"
-                              size="icon-sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditingVariantId(variant.id)
-                                setEditingVariant(toVariantForm(variant))
-                              }}
-                              aria-label="Editar variante"
-                            >
-                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                            </Button>
-                            <Button
-                              type="button"
-                              size="icon-sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteVariant(variant.id)}
-                              disabled={isVariantPending}
-                              aria-label="Eliminar variante"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-
-                <div className="rounded-md border bg-muted/30 p-2">
-                  <VariantInputs
-                    value={newVariant}
-                    onChange={setNewVariant}
-                    disabled={isVariantPending}
-                    actions={
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleCreateVariant}
-                        disabled={isVariantPending}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Agregar
-                      </Button>
-                    }
-                  />
-                </div>
+      <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+        <SheetContent
+          side="right"
+          className="w-full max-w-2xl overflow-y-auto border-l bg-background p-0"
+        >
+          <SheetHeader className="border-b bg-muted/30 px-6 py-5 sm:px-8">
+            <div className="flex items-center gap-3 pr-10">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border bg-background text-primary shadow-sm">
+                <Package className="h-5 w-5" aria-hidden="true" />
               </div>
-            )}
-          </section>
+              <div>
+                <SheetTitle className="text-xl font-semibold tracking-tight">
+                  {isEdit ? 'Editar producto' : 'Nuevo producto'}
+                </SheetTitle>
+                <SheetDescription>
+                  {isEdit
+                    ? 'Modificá los datos del producto y sus variantes.'
+                    : 'Completá los datos. Al guardar se crea la variante base automáticamente.'}
+                </SheetDescription>
+              </div>
+            </div>
+          </SheetHeader>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear producto'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+            <div className="space-y-6 px-6 py-6 sm:px-8">
 
-    <AlertDialog open={!!variantToDelete} onOpenChange={(open) => { if (!open) setVariantToDelete(null) }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar variante?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción no se puede deshacer. La variante será eliminada permanentemente.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={confirmDeleteVariant}
-            className="bg-destructive hover:bg-destructive/90"
-          >
-            Eliminar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+              {/* Imagen */}
+              <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Imagen del producto</h3>
+                    <p className="text-muted-foreground text-xs leading-5">
+                      Usá una imagen cuadrada y de buena resolución.
+                    </p>
+                  </div>
+                </div>
+                <ImageUploader
+                  currentUrl={currentImageUrl}
+                  className="w-full"
+                  previewClassName="h-44 w-full rounded-xl border-primary/20 bg-muted/40"
+                  previewWrapperClassName="block w-full"
+                  imageSizes="(max-width: 640px) 100vw, 560px"
+                  onFileSelect={(file) => setPendingFile(file)}
+                  onRemove={() => {
+                    setPendingFile(null)
+                    setCurrentImageUrl(undefined)
+                  }}
+                />
+              </section>
+
+              {/* Datos del producto */}
+              <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+                <div className="mb-5 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Tag className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Datos del producto</h3>
+                    <p className="text-muted-foreground text-xs leading-5">
+                      El nombre genera el slug automáticamente al crear un producto nuevo.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label
+                      htmlFor="prod-name"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Nombre *
+                    </Label>
+                    <div className="relative">
+                      <Tag
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="prod-name"
+                        placeholder="Ej: Chapita personalizada"
+                        className="h-11 pl-9"
+                        aria-invalid={!!errors.name}
+                        {...register('name')}
+                        onChange={handleNameChange}
+                      />
+                    </div>
+                    {errors.name && (
+                      <p className="text-xs font-medium text-destructive">{errors.name.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="prod-slug"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Slug *
+                    </Label>
+                    <div className="relative">
+                      <Link2
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="prod-slug"
+                        placeholder="chapita-personalizada"
+                        className="h-11 pl-9"
+                        aria-invalid={!!errors.slug}
+                        {...register('slug')}
+                      />
+                    </div>
+                    {errors.slug && (
+                      <p className="text-xs font-medium text-destructive">{errors.slug.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="prod-category"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Categoría *
+                    </Label>
+                    <Select
+                      value={watch('category_id') || undefined}
+                      onValueChange={(v) => v && setValue('category_id', v)}
+                    >
+                      <SelectTrigger
+                        id="prod-category"
+                        className="h-11"
+                        aria-invalid={!!errors.category_id}
+                      >
+                        <SelectValue placeholder="Seleccionar categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.category_id && (
+                      <p className="text-xs font-medium text-destructive">{errors.category_id.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label
+                      htmlFor="prod-desc"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Descripción
+                    </Label>
+                    <Textarea
+                      id="prod-desc"
+                      rows={4}
+                      placeholder="Describí el producto y sus características."
+                      className="min-h-28 resize-none"
+                      {...register('description')}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3 sm:col-span-2">
+                    <input
+                      id="prod-featured"
+                      type="checkbox"
+                      {...register('featured')}
+                      className="h-4 w-4 rounded border-border accent-primary"
+                    />
+                    <div>
+                      <Label
+                        htmlFor="prod-featured"
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        <Star className="mr-1.5 inline h-3.5 w-3.5" aria-hidden="true" />
+                        Producto destacado
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Aparece en la sección de destacados de la tienda.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Precio y stock */}
+              <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+                <div className="mb-5 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Banknote className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Precio y stock</h3>
+                    <p className="text-muted-foreground text-xs leading-5">
+                      Precio en pesos enteros. Stock mínimo 0.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="prod-price"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Precio base (ARS) *
+                    </Label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                        $
+                      </span>
+                      <Input
+                        id="prod-price"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="h-11 pl-7"
+                        aria-invalid={!!errors.price_pesos}
+                        {...register('price_pesos')}
+                      />
+                    </div>
+                    {errors.price_pesos && (
+                      <p className="text-xs font-medium text-destructive">{errors.price_pesos.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="prod-stock"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Stock base
+                    </Label>
+                    <div className="relative">
+                      <Archive
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="prod-stock"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="h-11 pl-9"
+                        aria-invalid={!!errors.stock}
+                        {...register('stock')}
+                      />
+                    </div>
+                    {errors.stock && (
+                      <p className="text-xs font-medium text-destructive">{errors.stock.message}</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Variantes — solo al editar */}
+              {isEdit && (
+                <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+                  <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Layers3 className="h-4 w-4" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold">Variantes</h3>
+                      <p className="text-muted-foreground text-xs leading-5">
+                        Nombre, precio y stock por combinación vendible.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {variants.length === 0 ? (
+                      <p className="rounded-xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
+                        Sin variantes — agregá la primera abajo.
+                      </p>
+                    ) : (
+                      variants.map((variant) => (
+                        <div key={variant.id} className="rounded-xl border bg-muted/20 p-3">
+                          {editingVariantId === variant.id ? (
+                            <VariantInputs
+                              value={editingVariant}
+                              onChange={setEditingVariant}
+                              disabled={isVariantPending}
+                              actions={
+                                <>
+                                  <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    onClick={() => handleUpdateVariant(variant.id)}
+                                    disabled={isVariantPending}
+                                    aria-label="Guardar variante"
+                                  >
+                                    <Save className="h-3.5 w-3.5" aria-hidden="true" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    onClick={() => setEditingVariantId(null)}
+                                    aria-label="Cancelar edición"
+                                  >
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                  </Button>
+                                </>
+                              }
+                            />
+                          ) : (
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-medium">{variant.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatPrice(variant.price)} · Stock {variant.stock}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingVariantId(variant.id)
+                                    setEditingVariant(toVariantForm(variant))
+                                  }}
+                                  aria-label="Editar variante"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteVariant(variant.id)}
+                                  disabled={isVariantPending}
+                                  aria-label="Eliminar variante"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+
+                    <div className="rounded-xl border bg-muted/30 p-3">
+                      <VariantInputs
+                        value={newVariant}
+                        onChange={setNewVariant}
+                        disabled={isVariantPending}
+                        actions={
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleCreateVariant}
+                            disabled={isVariantPending}
+                          >
+                            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                            Agregar
+                          </Button>
+                        }
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 mt-auto flex flex-col-reverse gap-3 border-t bg-background/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end sm:px-8">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={onClose}
+                className="h-11 sm:min-w-28"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                size="lg"
+                className="h-11 sm:min-w-40"
+              >
+                {isSubmitting && (
+                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                )}
+                {isSubmitting ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear producto'}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={!!variantToDelete} onOpenChange={(open) => { if (!open) setVariantToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar variante?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La variante será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteVariant}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
@@ -595,4 +786,3 @@ function VariantInputs({ value, onChange, disabled, actions }: VariantInputsProp
     </div>
   )
 }
-

@@ -26,7 +26,7 @@ export function SignUpForm() {
     setMessage(null)
     startTransition(async () => {
       const result = await signUpAction(values)
-      if (!result.ok) setMessage('No pudimos crear la cuenta. Revisá los datos e intentá de nuevo.')
+      if (!result.ok) setMessage('No pudimos crear la cuenta. RevisÃ¡ los datos e intentÃ¡ de nuevo.')
     })
   }
 
@@ -45,7 +45,7 @@ export function SignUpForm() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="password">ContraseÃ±a</Label>
         <Input id="password" type="password" autoComplete="new-password" {...register('password')} aria-invalid={!!errors.password} />
         {errors.password && <p className="text-xs text-destructive" role="alert">{errors.password.message}</p>}
       </div>
@@ -57,9 +57,9 @@ export function SignUpForm() {
       </Button>
 
       <p className="text-center text-sm text-[#6B6258]">
-        ¿Ya tenés cuenta?{' '}
+        Â¿Ya tenÃ©s cuenta?{' '}
         <Link href="/cuenta/login" className="font-semibold text-[#B68A57] hover:underline">
-          Ingresá
+          IngresÃ¡
         </Link>
       </p>
     </form>

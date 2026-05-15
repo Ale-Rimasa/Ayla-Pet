@@ -30,7 +30,7 @@ export function LoginForm({ nextPath = '/cuenta' }: LoginFormProps) {
     setError(null)
     startTransition(async () => {
       const result = await signInAction(values, nextPath)
-      if (!result.ok) setError('Email o contraseña incorrectos.')
+      if (!result.ok) setError('Email o contraseÃ±a incorrectos.')
     })
   }
 
@@ -43,7 +43,7 @@ export function LoginForm({ nextPath = '/cuenta' }: LoginFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="password">ContraseÃ±a</Label>
         <Input id="password" type="password" autoComplete="current-password" {...register('password')} aria-invalid={!!errors.password} />
         {errors.password && <p className="text-xs text-destructive" role="alert">{errors.password.message}</p>}
       </div>
@@ -55,7 +55,7 @@ export function LoginForm({ nextPath = '/cuenta' }: LoginFormProps) {
       </Button>
 
       <p className="text-center text-sm text-[#6B6258]">
-        ¿No tenés cuenta?{' '}
+        Â¿No tenÃ©s cuenta?{' '}
         <Link href="/cuenta/registro" className="font-semibold text-[#B68A57] hover:underline">
           Registrate
         </Link>

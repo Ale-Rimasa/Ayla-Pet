@@ -21,10 +21,10 @@ export default async function VerificarPage({ searchParams }: VerificarPageProps
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) redirect('/cuenta')
 
-    return <VerificationMessage title="No pudimos verificar tu cuenta" message="El enlace venció o no es válido. Probá ingresar nuevamente." />
+    return <VerificationMessage title="No pudimos verificar tu cuenta" message="El enlace venciÃ³ o no es vÃ¡lido. ProbÃ¡ ingresar nuevamente." />
   }
 
-  return <VerificationMessage title="Revisá tu email" message="Te enviamos un enlace para confirmar tu cuenta antes de ingresar." />
+  return <VerificationMessage title="RevisÃ¡ tu email" message="Te enviamos un enlace para confirmar tu cuenta antes de ingresar." />
 }
 
 function VerificationMessage({ title, message }: { title: string; message: string }) {
