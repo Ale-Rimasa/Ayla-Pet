@@ -83,10 +83,10 @@ export function ProductsTable({ products, categories: cats }: ProductsTableProps
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {product.images?.[0] ? (
+                      {product.images?.[0]?.url ? (
                         <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted shrink-0">
                           <Image
-                            src={product.images[0]}
+                            src={product.images[0].url}
                             alt={product.name}
                             fill
                             className="object-cover"

@@ -13,16 +13,18 @@ export const metadata: Metadata = {
 }
 
 interface ProductsPageProps {
-  searchParams: Promise<{ categoria?: string; pagina?: string }>
+  searchParams: Promise<{ q?: string; categoria?: string; pagina?: string }>
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = await searchParams
   const categorySlug = params.categoria
-  const page = params.pagina ? parseInt(params.pagina, 10) : 1
+  const q = params.q?.trim() || undefined
+  const rawPage = parseInt(params.pagina ?? '1', 10)
+  const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage
 
   const [{ data: products, count }, categories] = await Promise.all([
-    getProducts({ categorySlug, page, pageSize: 12 }),
+    getProducts({ q, categorySlug, page, pageSize: 12 }),
     getCategories(),
   ])
 

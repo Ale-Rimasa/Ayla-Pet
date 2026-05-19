@@ -12,7 +12,7 @@ export function ProductCard({ product }: ProductCardProps) {
     ? Math.min(...product.variants.map((v) => v.price))
     : 0
 
-  const mainImage = product.images[0] ?? null
+  const mainImage = product.images[0]?.url ?? null
 
   return (
     <Link

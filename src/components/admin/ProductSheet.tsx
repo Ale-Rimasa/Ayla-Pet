@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ImageUploader } from '@/components/admin/ImageUploader'
+import { MultiImageUploader } from '@/components/admin/MultiImageUploader'
 import {
   createProduct,
   updateProduct,
@@ -61,7 +62,7 @@ import {
   deleteVariant,
 } from '@/lib/actions/products'
 import { formatPrice, slugify } from '@/lib/utils'
-import type { Product, Category, ProductVariant } from '@/types'
+import type { Product, Category, ProductImage, ProductVariant } from '@/types'
 
 const productFormSchema = z.object({
   name: z.string().min(2, 'Ingresá el nombre del producto'),
@@ -107,8 +108,9 @@ function parseVariantForm(values: VariantForm) {
 export function ProductSheet({ product, categories, open, onClose }: ProductSheetProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(
-    product?.images?.[0]
+    product?.images?.[0]?.url
   )
+  const [productImages, setProductImages] = useState<ProductImage[]>(product?.images ?? [])
   const [variants, setVariants] = useState<ProductVariant[]>(product?.variants ?? [])
   const [newVariant, setNewVariant] = useState<VariantForm>(emptyVariantForm)
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null)
@@ -134,7 +136,8 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
   })
 
   useEffect(() => {
-    setCurrentImageUrl(product?.images?.[0])
+    setCurrentImageUrl(product?.images?.[0]?.url)
+    setProductImages(product?.images ?? [])
     setVariants(product?.variants ?? [])
     setNewVariant(emptyVariantForm)
     setEditingVariantId(null)
@@ -183,6 +186,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
       category_id: values.category_id,
       images: imageUrl ? [imageUrl] : [],
       featured: values.featured,
+      // product_images are managed via MultiImageUploader in edit mode
     }
 
     if (isEdit && product) {
@@ -360,24 +364,36 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                     <ImageIcon className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold">Imagen del producto</h3>
+                    <h3 className="text-sm font-semibold">
+                      {isEdit ? 'Imágenes del producto' : 'Imagen del producto'}
+                    </h3>
                     <p className="text-muted-foreground text-xs leading-5">
-                      Usá una imagen cuadrada y de buena resolución.
+                      {isEdit
+                        ? 'Hasta 8 imágenes. La primera se usa como imagen principal.'
+                        : 'Usá una imagen cuadrada y de buena resolución.'}
                     </p>
                   </div>
                 </div>
-                <ImageUploader
-                  currentUrl={currentImageUrl}
-                  className="w-full"
-                  previewClassName="h-44 w-full rounded-xl border-primary/20 bg-muted/40"
-                  previewWrapperClassName="block w-full"
-                  imageSizes="(max-width: 640px) 100vw, 560px"
-                  onFileSelect={(file) => setPendingFile(file)}
-                  onRemove={() => {
-                    setPendingFile(null)
-                    setCurrentImageUrl(undefined)
-                  }}
-                />
+                {isEdit && product ? (
+                  <MultiImageUploader
+                    productId={product.id}
+                    images={productImages}
+                    onImagesChange={setProductImages}
+                  />
+                ) : (
+                  <ImageUploader
+                    currentUrl={currentImageUrl}
+                    className="w-full"
+                    previewClassName="h-44 w-full rounded-xl border-primary/20 bg-muted/40"
+                    previewWrapperClassName="block w-full"
+                    imageSizes="(max-width: 640px) 100vw, 560px"
+                    onFileSelect={(file) => setPendingFile(file)}
+                    onRemove={() => {
+                      setPendingFile(null)
+                      setCurrentImageUrl(undefined)
+                    }}
+                  />
+                )}
               </section>
 
               {/* Datos del producto */}

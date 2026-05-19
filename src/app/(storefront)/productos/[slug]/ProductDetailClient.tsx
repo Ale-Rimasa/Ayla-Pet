@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ProductGallery } from '@/components/product/ProductGallery'
+import { ProductTrustBar } from '@/components/product/ProductTrustBar'
 import { VariantSelector } from '@/components/product/VariantSelector'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
@@ -22,8 +23,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-        {/* Gallery */}
-        <ProductGallery images={product.images} productName={product.name} />
+        {/* Gallery + trust bar */}
+        <div>
+          <ProductGallery images={product.images} productName={product.name} />
+          <ProductTrustBar />
+        </div>
 
         {/* Details */}
         <div className="flex flex-col gap-6">
@@ -66,7 +70,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                   variantId: selectedVariant.id,
                   name: `${product.name} — ${selectedVariant.name}`,
                   price: selectedVariant.price,
-                  imageUrl: product.images[0] ?? '',
+                  imageUrl: product.images[0]?.url ?? '',
                 }}
                 stock={selectedVariant.stock}
                 className="flex-1"

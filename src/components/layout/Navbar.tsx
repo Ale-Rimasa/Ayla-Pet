@@ -1,7 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Truck, Star, Heart } from 'lucide-react'
 import { CartIcon } from './CartIcon'
-import { AccountButton } from '@/components/auth/AccountButton'
 import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
 
 export function Navbar() {
@@ -33,14 +33,19 @@ export function Navbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="shrink-0 flex flex-col items-center leading-none group"
+            className="shrink-0 flex items-center gap-2 group"
             aria-label={BRAND.name}
           >
+            <Image
+              src="/logo.png"
+              alt={BRAND.name}
+              width={60}
+              height={60}
+              className="rounded-full object-cover transition-opacity group-hover:opacity-80"
+              priority
+            />
             <span className="font-heading text-xl font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
               {BRAND.name}
-            </span>
-            <span className="text-[9px] tracking-[0.25em] text-[#6B6258] uppercase">
-              · PET ACCESSORIES ·
             </span>
           </Link>
 
@@ -65,13 +70,13 @@ export function Navbar() {
               Retratos grabados
             </Link>
             <Link
-              href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`}
+              href="/quienes-somos"
               className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
             >
-              Colecciones
+              Quiénes somos
             </Link>
             <Link
-              href="/productos"
+              href="/#asi-de-simple"
               className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
             >
               Cómo funciona
@@ -81,17 +86,16 @@ export function Navbar() {
           {/* Right actions */}
           <div className="flex items-center gap-2">
             {/* Search — desktop only */}
-            <div className="hidden md:flex items-center gap-2 rounded-full border border-[#E7DCCF] bg-[#FAF7F2] px-3 py-1.5">
+            <form action="/productos" method="GET" className="hidden md:flex items-center gap-2 rounded-full border border-[#E7DCCF] bg-[#FAF7F2] px-3 py-1.5">
               <Search className="h-3.5 w-3.5 text-[#6B6258]" aria-hidden="true" />
               <input
                 type="search"
+                name="q"
                 placeholder="Buscar productos..."
                 className="w-36 bg-transparent text-xs text-[#1F1F1F] placeholder:text-[#6B6258] outline-none"
                 aria-label="Buscar productos"
               />
-            </div>
-
-            <AccountButton />
+            </form>
 
             {/* Cart */}
             <CartIcon />

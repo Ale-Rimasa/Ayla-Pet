@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getProductSlugs, getProductBySlug } from '@/lib/db/products'
+import { getProductSlugs, getProductBySlug, getMainImage } from '@/lib/db/products'
 import { ProductDetailClient } from './ProductDetailClient'
 import { BRAND } from '@/lib/constants'
 export const revalidate = 30
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: product.description ?? `${product.name} — ${BRAND.name}`,
     openGraph: {
       title: product.name,
-      images: product.images[0] ? [product.images[0]] : [],
+      images: getMainImage(product.images) ? [getMainImage(product.images)!] : [],
     },
   }
 }

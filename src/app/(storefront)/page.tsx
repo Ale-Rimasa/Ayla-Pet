@@ -303,7 +303,7 @@ export default async function HomePage() {
               {[
                 { name: 'Chapitas con datos', desc: 'Nombre y teléfono grabados', slug: CATEGORY_SLUGS.MASCOTAS },
                 { name: 'Llaveros con imagen', desc: 'Su retrato, siempre con vos', slug: CATEGORY_SLUGS.CHAPAS },
-                { name: 'Pulseras con imagen', desc: 'Un vínculo que se lleva en la piel', slug: CATEGORY_SLUGS.CHAPAS },
+                { name: 'Pulseras con imagen', desc: 'Un vínculo que se lleva en la piel', slug: CATEGORY_SLUGS.MASCOTAS },
                 { name: 'Collares con imagen', desc: 'Cerca de su corazón, siempre', slug: CATEGORY_SLUGS.MASCOTAS },
               ].map((cat) => (
                 <Link
@@ -401,7 +401,7 @@ export default async function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════
           PROCESS — "Así de simple"
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="bg-white py-16 sm:py-20">
+      <section id="asi-de-simple" className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="font-heading text-2xl font-semibold text-center text-[#111111] mb-12 sm:text-3xl">
             Así de simple

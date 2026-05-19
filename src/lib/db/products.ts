@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Product, ProductVariant, GetProductsOptions, GetProductsResult } from '@/types'
+import { requireAdmin } from '@/lib/auth'
+import type { Product, ProductImage, ProductVariant, GetProductsOptions, GetProductsResult } from '@/types'
 
 type ProductRow = {
   id: string
@@ -8,7 +9,7 @@ type ProductRow = {
   slug: string
   description: string | null
   category_id: string
-  images: string[]
+  images?: string[]
   featured: boolean
   deleted_at: string | null
   created_at: string
@@ -27,6 +28,32 @@ type VariantRow = {
   updated_at: string
 }
 
+type ProductImageRow = {
+  id: string
+  product_id: string
+  url: string
+  alt: string | null
+  label: string | null
+  sort_order: number
+  created_at: string
+}
+
+export function mapProductImage(row: ProductImageRow): ProductImage {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    url: row.url,
+    alt: row.alt ?? undefined,
+    label: row.label ?? undefined,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+  }
+}
+
+export function getMainImage(images: ProductImage[]): string | undefined {
+  return images[0]?.url
+}
+
 function mapVariant(row: VariantRow): ProductVariant {
   return {
     id: row.id,
@@ -41,14 +68,14 @@ function mapVariant(row: VariantRow): ProductVariant {
   }
 }
 
-function mapProduct(row: ProductRow, variants: VariantRow[] = []): Product {
+function mapProduct(row: ProductRow, variants: VariantRow[] = [], images: ProductImageRow[] = []): Product {
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
     description: row.description ?? undefined,
     categoryId: row.category_id,
-    images: row.images ?? [],
+    images: images.sort((a, b) => a.sort_order - b.sort_order).map(mapProductImage),
     featured: row.featured,
     variants: variants.map(mapVariant),
     deletedAt: row.deleted_at ?? undefined,
@@ -58,7 +85,7 @@ function mapProduct(row: ProductRow, variants: VariantRow[] = []): Product {
 }
 
 export async function getProducts(opts: GetProductsOptions = {}): Promise<GetProductsResult> {
-  const { categorySlug, page = 1, pageSize = 12 } = opts
+  const { q, categorySlug, page = 1, pageSize = 12 } = opts
   const supabase = await createClient()
 
   const from = (page - 1) * pageSize
@@ -66,10 +93,15 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<GetPro
 
   let query = supabase
     .from('products')
-    .select('*', { count: 'exact' })
+    .select('*, images:product_images(*)', { count: 'exact' })
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(from, to)
+
+  if (q) {
+    const safe = q.slice(0, 100).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+    query = query.ilike('name', `%${safe}%`)
+  }
 
   if (categorySlug) {
     const { data: category } = await supabase
@@ -84,7 +116,10 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<GetPro
 
   const { data, count } = await query
   return {
-    data: (data ?? []).map((row) => mapProduct(row as ProductRow)),
+    data: (data ?? []).map((row) => {
+      const { images: rawImages, ...productRow } = row as ProductRow & { images: ProductImageRow[] }
+      return mapProduct(productRow, [], rawImages ?? [])
+    }),
     count: count ?? 0,
     page,
     pageSize,
@@ -97,25 +132,31 @@ export async function getProductBySlug(
   const supabase = await createClient()
   const { data } = await supabase
     .from('products')
-    .select('*, variants:product_variants(*)')
+    .select('*, variants:product_variants(*), images:product_images(*)')
     .eq('slug', slug)
     .is('deleted_at', null)
     .maybeSingle()
   if (!data) return null
-  const { variants: rawVariants, ...row } = data as ProductRow & { variants: VariantRow[] }
-  return mapProduct(row, rawVariants ?? []) as Product & { variants: ProductVariant[] }
+  const { variants: rawVariants, images: rawImages, ...row } = data as ProductRow & {
+    variants: VariantRow[]
+    images: ProductImageRow[]
+  }
+  return mapProduct(row, rawVariants ?? [], rawImages ?? []) as Product & { variants: ProductVariant[] }
 }
 
 export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select('*, images:product_images(*)')
     .eq('featured', true)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit)
-  return (data ?? []).map((row) => mapProduct(row as ProductRow))
+  return (data ?? []).map((row) => {
+    const { images: rawImages, ...productRow } = row as ProductRow & { images: ProductImageRow[] }
+    return mapProduct(productRow, [], rawImages ?? [])
+  })
 }
 
 export interface GetProductsForAdminOptions {
@@ -126,7 +167,7 @@ export interface GetProductsForAdminOptions {
 }
 
 export async function getProductSlugs(): Promise<string[]> {
-  const supabase = createAdminClient()
+  const supabase = await createClient()
   const { data } = await supabase
     .from('products')
     .select('slug')
@@ -137,6 +178,7 @@ export async function getProductSlugs(): Promise<string[]> {
 export async function getProductsForAdmin(
   opts: GetProductsForAdminOptions = {}
 ): Promise<{ data: Product[]; count: number }> {
+  await requireAdmin()
   const { q, categoryId, page = 1, pageSize = 20 } = opts
   const supabase = createAdminClient()
 
@@ -145,12 +187,13 @@ export async function getProductsForAdmin(
 
   let query = supabase
     .from('products')
-    .select('*, variants:product_variants(*)', { count: 'exact' })
+    .select('*, variants:product_variants(*), images:product_images(*)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
   if (q) {
-    query = query.ilike('name', `%${q}%`)
+    const safe = q.slice(0, 100).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+    query = query.ilike('name', `%${safe}%`)
   }
 
   if (categoryId) {
@@ -161,10 +204,11 @@ export async function getProductsForAdmin(
 
   return {
     data: (data ?? []).map((row) => {
-      const { variants: rawVariants, ...productRow } = row as ProductRow & {
+      const { variants: rawVariants, images: rawImages, ...productRow } = row as ProductRow & {
         variants: VariantRow[]
+        images: ProductImageRow[]
       }
-      return mapProduct(productRow, rawVariants ?? [])
+      return mapProduct(productRow, rawVariants ?? [], rawImages ?? [])
     }),
     count: count ?? 0,
   }

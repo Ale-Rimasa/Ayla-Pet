@@ -278,7 +278,7 @@ export async function getStats(): Promise<StatsData> {
         slug: product.slug,
         description: product.description ?? undefined,
         categoryId: product.category_id,
-        images: product.images ?? [],
+        images: [],
         featured: product.featured,
         variants: [
           {

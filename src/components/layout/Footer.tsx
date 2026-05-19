@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail } from 'lucide-react'
 import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
 import { buildWhatsAppLink } from '@/lib/utils'
@@ -63,12 +64,16 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2 sm:col-span-1 space-y-4">
             {/* Logo */}
-            <Link href="/" className="inline-flex flex-col leading-none">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt={BRAND.name}
+                width={44}
+                height={44}
+                className="rounded-full object-cover"
+              />
               <span className="font-heading text-xl font-bold text-[#111111]">
                 {BRAND.name}
-              </span>
-              <span className="text-[9px] tracking-[0.25em] text-[#6B6258] uppercase">
-                · PET ACCESSORIES ·
               </span>
             </Link>
             <p className="text-sm text-[#6B6258] leading-relaxed max-w-[200px]">
@@ -85,25 +90,7 @@ export function Footer() {
               >
                 <InstagramIcon className="h-3.5 w-3.5" />
               </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E7DCCF] text-[#6B6258] transition-colors hover:border-[#B68A57] hover:text-[#B68A57]"
-              >
-                <FacebookIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://tiktok.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="TikTok"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E7DCCF] text-[#6B6258] transition-colors hover:border-[#B68A57] hover:text-[#B68A57]"
-              >
-                <TikTokIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
+<a
                 href={whatsappContactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -134,17 +121,17 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
+                <Link href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`} className="transition-colors hover:text-[#B68A57]">
                   Llaveros con imagen
                 </Link>
               </li>
               <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
+                <Link href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`} className="transition-colors hover:text-[#B68A57]">
                   Pulseras con imagen
                 </Link>
               </li>
               <li>
-                <Link href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`} className="transition-colors hover:text-[#B68A57]">
+                <Link href={`/categorias/${CATEGORY_SLUGS.MASCOTAS}`} className="transition-colors hover:text-[#B68A57]">
                   Collares con imagen
                 </Link>
               </li>
@@ -163,23 +150,13 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#6B6258]">
               <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
+                <Link href="/#asi-de-simple" className="transition-colors hover:text-[#B68A57]">
                   Cómo funciona
                 </Link>
               </li>
               <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Envíos y tiempos
-                </Link>
-              </li>
-              <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Cambios y devoluciones
-                </Link>
-              </li>
-              <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Políticas de privacidad
+                <Link href="/quienes-somos" className="transition-colors hover:text-[#B68A57]">
+                  Quiénes somos
                 </Link>
               </li>
               <li>
@@ -202,19 +179,14 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#6B6258]">
               <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Guía de talles
-                </Link>
-              </li>
-              <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Cuidados
-                </Link>
-              </li>
-              <li>
-                <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
-                  Términos y condiciones
-                </Link>
+                <a
+                  href={whatsappContactUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-[#B68A57]"
+                >
+                  Preguntas frecuentes
+                </a>
               </li>
             </ul>
 

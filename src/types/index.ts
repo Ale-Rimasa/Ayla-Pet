@@ -57,6 +57,16 @@ export interface Order {
   updatedAt: string
 }
 
+export interface ProductImage {
+  id: string
+  productId: string
+  url: string
+  alt?: string
+  label?: string
+  sortOrder: number
+  createdAt: string
+}
+
 export interface ProductVariant {
   id: string
   productId: string
@@ -76,7 +86,7 @@ export interface Product {
   description?: string
   categoryId: string
   variants: ProductVariant[]
-  images: string[]
+  images: ProductImage[]
   featured: boolean
   deletedAt?: string | null
   createdAt: string
@@ -115,6 +125,7 @@ export interface CreateOrderPayload {
 }
 
 export interface GetProductsOptions {
+  q?: string
   categorySlug?: string
   page?: number
   pageSize?: number
