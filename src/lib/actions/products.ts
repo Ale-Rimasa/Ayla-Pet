@@ -67,7 +67,7 @@ export async function createProduct(
 
   revalidatePath('/admin/productos')
   revalidatePath('/productos')
-  revalidateTag(`producto:${parsed.data.slug}`)
+  revalidateTag(`producto:${parsed.data.slug}`, {})
 
   return { ok: true, data: { id: inserted.id } }
 }
@@ -99,7 +99,7 @@ export async function updateProduct(
   revalidatePath('/admin/productos')
   revalidatePath('/productos')
   if (fields.slug) {
-    revalidateTag(`producto:${fields.slug}`)
+    revalidateTag(`producto:${fields.slug}`, {})
   }
 
   return { ok: true }
