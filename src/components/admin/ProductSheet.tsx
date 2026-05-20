@@ -480,7 +480,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                       >
                         <SelectValue placeholder="Seleccionar categoría" />
                       </SelectTrigger>
-                      <SelectContent position="popper">
+                      <SelectContent>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
