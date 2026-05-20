@@ -1,10 +1,10 @@
-# 🔆 PT Laser — Ecommerce
+# 🔆 Ayla Pets — Ecommerce
 
 **Versión:** 1.0  
 **Estado:** Desarrollo  
 **Última actualización:** Mayo 2026
 
-Ecommerce para PT Laser — insignias y chapas personalizadas grabadas a laser (para mascotas, identificación, regalos, etc.). Panel de administración propio en `/admin/*` con Next.js + Supabase + shadcn/ui.
+Ecommerce para Ayla Pets — insignias y chapas personalizadas grabadas a laser (para mascotas, identificación, regalos, etc.). Panel de administración propio en `/admin/*` con Next.js + Supabase + shadcn/ui.
 
 ---
 
@@ -61,7 +61,7 @@ Para cambios solo de UI, SDD es opcional.
 
 | Dato | Valor |
 |------|-------|
-| Marca | PT Laser |
+| Marca | Ayla Pets |
 | Producto | Insignias y chapas grabadas a laser |
 | Moneda | ARS |
 | Tipo de conversión | Híbrido (online + WhatsApp) |
