@@ -167,7 +167,8 @@ export interface GetProductsForAdminOptions {
 }
 
 export async function getProductSlugs(): Promise<string[]> {
-  const supabase = await createClient()
+  // Must use admin client: called from generateStaticParams at build time (no HTTP request/cookies available)
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('products')
     .select('slug')
