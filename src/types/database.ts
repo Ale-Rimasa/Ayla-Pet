@@ -129,6 +129,44 @@ export type Database = {
           },
         ]
       }
+      order_reference_photos: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          mime_type: string
+          order_id: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          mime_type: string
+          order_id: string
+          size_bytes: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          mime_type?: string
+          order_id?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_reference_photos_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           actor_id: string | null

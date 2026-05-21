@@ -1,8 +1,6 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, act, waitFor } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import type { Order } from '@/types'
-
-// ─── Mocks ───────────────────────────────────────────────────────────────────
 
 vi.mock('@/components/ui/button', () => ({
   buttonVariants: () => 'btn',
@@ -21,9 +19,11 @@ vi.mock('next/link', () => ({
 
 vi.mock('lucide-react', () => ({
   CheckCircle: () => <svg data-testid="check-circle" />,
-  Clock: () => <svg data-testid="clock-icon" />,
-  AlertCircle: () => <svg data-testid="alert-circle" />,
-  Loader2: () => <svg data-testid="loader-icon" />,
+  Copy: () => <svg data-testid="copy-icon" />,
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 vi.mock('@/store/cart.store', () => ({
@@ -31,11 +31,9 @@ vi.mock('@/store/cart.store', () => ({
     selector({ clearCart: vi.fn() }),
 }))
 
-const mockGetOrderStatus = vi.fn()
-
-vi.mock('@/lib/actions/orders', () => ({
-  getOrderStatus: (...args: unknown[]) => mockGetOrderStatus(...args),
-  updateOrderStatus: vi.fn(),
+vi.mock('@/store/checkout.store', () => ({
+  useCheckoutStore: (selector: (s: { resetCheckout: () => void }) => unknown) =>
+    selector({ resetCheckout: vi.fn() }),
 }))
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -67,72 +65,45 @@ function makeOrder(status: 'pending' | 'paid'): Order {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-// Import once — vi.mock() at top level is hoisted and applies regardless
 let ConfirmacionClient: (typeof import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient'))['ConfirmacionClient']
 
 beforeEach(async () => {
-  mockGetOrderStatus.mockReset()
-  vi.useFakeTimers()
+  vi.resetModules()
   const mod = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
   ConfirmacionClient = mod.ConfirmacionClient
 })
 
-afterEach(() => {
-  vi.useRealTimers()
-})
-
 describe('ConfirmacionClient', () => {
-  it('renders "¡Pedido confirmado!" immediately when initial order.status is "paid"', () => {
-    render(<ConfirmacionClient order={makeOrder('paid')} />)
-
-    expect(screen.getByText('¡Pedido confirmado!')).toBeInTheDocument()
-    // Should NOT start polling when already paid
-    expect(mockGetOrderStatus).not.toHaveBeenCalled()
-  })
-
-  it('renders polling/loading state when initial order.status is "pending"', () => {
-    mockGetOrderStatus.mockResolvedValue({ status: 'pending' })
+  it('renders "¡Pedido recibido!" for a pending order', () => {
     render(<ConfirmacionClient order={makeOrder('pending')} />)
-
-    expect(screen.getByText(/Verificando tu pago/i)).toBeInTheDocument()
+    expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
   })
 
-  it('transitions to paid state when polling receives status "paid"', async () => {
-    mockGetOrderStatus.mockResolvedValue({ status: 'paid' })
+  it('shows the order number', () => {
     render(<ConfirmacionClient order={makeOrder('pending')} />)
-
-    // Advance one polling interval and drain all async work including the
-    // promise chain inside the async setInterval callback
-    await act(async () => {
-      await vi.runAllTimersAsync()
-    })
-
-    expect(screen.getByText('¡Pedido confirmado!')).toBeInTheDocument()
+    const shortId = ORDER_UUID.slice(0, 8).toUpperCase()
+    expect(screen.getAllByText(new RegExp(shortId)).length).toBeGreaterThan(0)
   })
 
-  it('shows timeout message after 10 failed polling attempts', async () => {
-    mockGetOrderStatus.mockResolvedValue({ status: 'pending' })
+  it('shows bank transfer data section', () => {
     render(<ConfirmacionClient order={makeOrder('pending')} />)
-
-    // Run all 10 intervals (each 3000ms) and drain promises between them
-    for (let i = 0; i < 10; i++) {
-      await act(async () => {
-        await vi.runAllTimersAsync()
-      })
-    }
-
-    expect(screen.getByText(/Aún no confirmamos tu pago/i)).toBeInTheDocument()
-    expect(screen.getByText(/te avisaremos por email/i)).toBeInTheDocument()
+    expect(screen.getByText('Datos para la transferencia')).toBeInTheDocument()
+    expect(screen.getByText('CBU')).toBeInTheDocument()
+    expect(screen.getByText('Alias')).toBeInTheDocument()
   })
 
-  it('clears the timeout on unmount to avoid memory leaks', () => {
-    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
-    mockGetOrderStatus.mockResolvedValue({ status: 'pending' })
+  it('CTA "Subir mis fotos" links to /mi-pedido/<id>/fotos', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} />)
+    const link = screen.getByRole('link', { name: /subir mis fotos/i })
+    expect(link.getAttribute('href')).toBe(`/mi-pedido/${ORDER_UUID}/fotos`)
+  })
 
+  it('renders the same static UI regardless of order status', () => {
     const { unmount } = render(<ConfirmacionClient order={makeOrder('pending')} />)
+    expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
     unmount()
 
-    expect(clearTimeoutSpy).toHaveBeenCalled()
-    clearTimeoutSpy.mockRestore()
+    render(<ConfirmacionClient order={makeOrder('paid')} />)
+    expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
   })
 })

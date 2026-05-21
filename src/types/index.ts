@@ -137,3 +137,15 @@ export interface GetProductsResult {
   page: number
   pageSize: number
 }
+
+export interface OrderReferencePhoto {
+  id: string
+  orderId: string
+  storagePath: string // solo uso interno; nunca enviar al cliente
+  displayOrder: number
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif'
+  sizeBytes: number
+  createdAt: string
+}
+
+export type OrderReferencePhotoForClient = Omit<OrderReferencePhoto, 'storagePath'>

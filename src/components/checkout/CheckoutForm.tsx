@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
 import { CheckoutSchema } from '@/lib/validations'
@@ -36,6 +37,7 @@ function stepToNumber(step: 'shipping' | 'review' | 'payment'): 1 | 2 {
 }
 
 export function CheckoutForm() {
+  const router = useRouter()
   const items = useCartStore((s) => s.items)
   const totalPrice = useCartStore((s) => s.totalPrice)
 
@@ -109,20 +111,7 @@ export function CheckoutForm() {
 
       const { orderId } = await orderRes.json()
 
-      const prefRes = await fetch('/api/payments/preference', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
-      })
-
-      if (!prefRes.ok) {
-        const body = await prefRes.json().catch(() => ({}))
-        throw new Error(body?.error ?? 'Error al iniciar el pago')
-      }
-
-      const { initPoint } = await prefRes.json()
-
-      window.location.assign(initPoint)
+      router.push(`/checkout/confirmacion?orderId=${orderId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
       setIsSubmitting(false)
@@ -361,7 +350,7 @@ export function CheckoutForm() {
                 className="flex-[2] bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                 disabled={isSubmitting || items.length === 0}
               >
-                {isSubmitting ? 'Procesando...' : `Pagar ${formatPrice(total)}`}
+                {isSubmitting ? 'Procesando...' : `Confirmar pedido — ${formatPrice(total)}`}
               </Button>
             </div>
           </div>

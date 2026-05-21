@@ -3,6 +3,7 @@ import { getOrderByIdForAdmin, getOrderStatusHistory } from '@/lib/db/orders'
 import { OrderCustomerCard } from '@/components/admin/OrderCustomerCard'
 import { OrderDetailHeader } from '@/components/admin/OrderDetailHeader'
 import { OrderItemsTable } from '@/components/admin/OrderItemsTable'
+import { OrderReferencePhotosCard } from '@/components/admin/OrderReferencePhotosCard'
 import { OrderStatusTimeline } from '@/components/admin/OrderStatusTimeline'
 
 export const dynamic = 'force-dynamic'
@@ -31,7 +32,10 @@ export default async function AdminPedidoDetallePage({ params }: PageProps) {
           <OrderItemsTable items={order.items} />
           <OrderStatusTimeline history={history} />
         </div>
-        <OrderCustomerCard order={order} />
+        <div className="space-y-4">
+          <OrderCustomerCard order={order} />
+          <OrderReferencePhotosCard orderId={order.id} />
+        </div>
       </div>
     </div>
   )

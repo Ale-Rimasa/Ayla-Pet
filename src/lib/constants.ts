@@ -7,10 +7,10 @@ export const BRAND = {
   name: 'Ayla Pets',
   displayLine1: 'Ayla',
   displayLine2: 'Pets',
-  adminEmail: 'admin@ptlaser.com.ar',
+  adminEmail: 'supportaylapet@gmail.com',
   domain: 'ptlaser.com.ar',
   instagram: 'https://www.instagram.com/aylapets_/',
-  email: 'ventas@ptlaser.com.ar',
+  email: 'supportaylapet@gmail.com',
 } as const
 
 export const ORDER_STATUS = {
@@ -26,6 +26,13 @@ export const ORDER_STATUS = {
 export const CATEGORY_SLUGS = {
   MASCOTAS: 'mascotas',
   CHAPAS: 'chapas',
+} as const
+
+export const TRANSFER = {
+  cbu: '0070693930004003890360', 
+  alias: 'Aylapets',              
+  titular: 'Jose Alejandro Rimasa',      
+  banco: 'Galicia',                  
 } as const
 
 // centavos ARS
