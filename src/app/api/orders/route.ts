@@ -38,7 +38,7 @@ type VariantWithProduct = {
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  if (!checkRateLimit(`orders:${ip}`, 10, 60_000)) {
+  if (!await checkRateLimit(`orders:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

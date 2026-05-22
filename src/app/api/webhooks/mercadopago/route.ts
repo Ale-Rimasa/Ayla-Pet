@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const xRequestId = request.headers.get('x-request-id') ?? ''
   const paymentId = new URL(request.url).searchParams.get('id') ?? ''
 
-  if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET)) {
+  if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET ?? '')) {
     return NextResponse.json({ error: 'invalid_signature' }, { status: 401 })
   }
 

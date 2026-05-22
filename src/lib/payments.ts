@@ -3,6 +3,7 @@ import { env } from '@/env'
 import type { Order } from '@/types'
 
 function getMpClient() {
+  if (!env.MP_ACCESS_TOKEN) throw new Error('MP_ACCESS_TOKEN is not configured')
   return new MercadoPagoConfig({ accessToken: env.MP_ACCESS_TOKEN })
 }
 

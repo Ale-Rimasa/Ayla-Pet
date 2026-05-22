@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-    MP_ACCESS_TOKEN: z.string().min(1),
-    MP_WEBHOOK_SECRET: z.string().min(1),
+    MP_ACCESS_TOKEN: z.string().min(1).optional(),
+    MP_WEBHOOK_SECRET: z.string().min(1).optional(),
     RESEND_API_KEY: z.string().min(1),
     RESEND_FROM_EMAIL: z.email(),
     DATABASE_URL: z.url().optional(),
