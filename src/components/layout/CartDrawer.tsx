@@ -37,7 +37,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-4">
               <ul className="space-y-4">
                 {items.map((item) => (
                   <li key={item.variantId} className="flex gap-3">
@@ -77,7 +77,7 @@ export function CartDrawer() {
               </ul>
             </div>
 
-            <div className="space-y-4 border-t border-border pt-4">
+            <div className="space-y-4 border-t border-border px-4 pb-4 pt-4">
               <div className="flex items-center justify-between font-semibold">
                 <span>Total</span>
                 <span>{formatPrice(totalPrice())}</span>

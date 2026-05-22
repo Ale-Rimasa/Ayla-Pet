@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -17,11 +18,16 @@ interface Props {
 }
 
 export function ProductsMenuClient({ categories }: Props) {
+  const router = useRouter()
+
   return (
     <NavigationMenu>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="h-auto bg-transparent px-0 text-sm font-medium text-[#6B6258] transition-colors hover:bg-transparent hover:text-[#B68A57] focus:bg-transparent data-open:bg-transparent data-popup-open:bg-transparent">
+          <NavigationMenuTrigger
+            className="h-auto bg-transparent px-0 text-sm font-medium text-[#6B6258] transition-colors hover:bg-transparent hover:text-[#B68A57] focus:bg-transparent data-open:bg-transparent data-popup-open:bg-transparent"
+            onClick={() => router.push('/productos')}
+          >
             Productos
           </NavigationMenuTrigger>
           <NavigationMenuContent>
