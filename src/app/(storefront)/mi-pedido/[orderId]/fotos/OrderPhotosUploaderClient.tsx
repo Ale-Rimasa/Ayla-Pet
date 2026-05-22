@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Plus, Trash2, ImageIcon, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,11 +50,16 @@ interface Props {
 }
 
 export function OrderPhotosUploaderClient({ orderId, initialPhotos, canUpload }: Props) {
+  const router = useRouter()
   const [photos, setPhotos] = useState<PhotoWithUrl[]>(initialPhotos)
   const [isPending, startTransition] = useTransition()
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [showGrabarModal, setShowGrabarModal] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleCloseGrabarModal(open: boolean) {
+    if (!open) router.push('/')
+  }
 
   function handleAddClick() {
     if (!canUpload || photos.length >= MAX_PHOTOS || isPending) return
@@ -207,7 +213,7 @@ export function OrderPhotosUploaderClient({ orderId, initialPhotos, canUpload }:
         </div>
       )}
 
-      <Dialog open={showGrabarModal} onOpenChange={setShowGrabarModal}>
+      <Dialog open={showGrabarModal} onOpenChange={handleCloseGrabarModal}>
         <DialogContent className="max-w-sm text-center">
           <div className="flex justify-center pt-2">
             <Image
