@@ -2,7 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Truck, Star, Heart } from 'lucide-react'
 import { CartIcon } from './CartIcon'
-import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
+import { BRAND } from '@/lib/constants'
+import { ProductsMenu } from './ProductsMenu'
 
 export function Navbar() {
   return (
@@ -57,18 +58,7 @@ export function Navbar() {
             >
               Inicio
             </Link>
-            <Link
-              href={`/categorias/${CATEGORY_SLUGS.MASCOTAS}`}
-              className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
-            >
-              Chapitas con datos
-            </Link>
-            <Link
-              href="/productos"
-              className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
-            >
-              Retratos grabados
-            </Link>
+            <ProductsMenu />
             <Link
               href="/quienes-somos"
               className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
