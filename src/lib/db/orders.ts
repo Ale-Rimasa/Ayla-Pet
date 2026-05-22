@@ -130,7 +130,7 @@ export async function createOrder(
     p_subtotal: payload.subtotal,
     p_shipping_cost: payload.shippingCost,
     p_total: payload.total,
-    p_notes: payload.notes ?? undefined,
+    p_notes: payload.notes ?? null,
     p_items: payload.items.map((item) => ({
       variant_id: item.variantId,
       product_name: item.productName,
