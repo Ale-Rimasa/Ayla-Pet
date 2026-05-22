@@ -143,13 +143,13 @@ export async function createOrder(
   }
 
   // RPC type generation predates optional p_user_id; regenerate DB types after migration 018.
+  // Llamar como método (no extraer a variable) para preservar el `this` del cliente Supabase.
   type CreateOrderRpc = (
     fn: 'create_order',
     args: typeof params
   ) => Promise<{ data: string | null; error: { message: string } | null }>
 
-  const rpc = supabase.rpc as unknown as CreateOrderRpc
-  const { data, error } = await rpc('create_order', params)
+  const { data, error } = await (supabase.rpc as unknown as CreateOrderRpc)('create_order', params)
 
   if (error) {
     return { ok: false, error: error.message }
