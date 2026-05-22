@@ -34,11 +34,11 @@ const activeItems = [
   { label: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
   { label: 'Clientes', href: '/admin/clientes', icon: Users },
   { label: 'Estadísticas', href: '/admin/estadisticas', icon: BarChart2 },
+  { label: 'Configuración', href: '/admin/configuracion', icon: Settings },
 ]
 
 const disabledItems = [
   { label: 'Descuentos', icon: Percent },
-  { label: 'Configuración', icon: Settings },
 ]
 
 export function AdminSidebar() {
