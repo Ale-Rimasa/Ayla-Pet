@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Plus, Trash2, ImageIcon } from 'lucide-react'
+import { Plus, Trash2, ImageIcon, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { uploadOrderReferencePhoto, deleteOrderReferencePhoto } from '@/lib/actions/order-photos'
 import type { OrderReferencePhotoForClient } from '@/types'
 
@@ -45,6 +52,7 @@ export function OrderPhotosUploaderClient({ orderId, initialPhotos, canUpload }:
   const [photos, setPhotos] = useState<PhotoWithUrl[]>(initialPhotos)
   const [isPending, startTransition] = useTransition()
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [showGrabarModal, setShowGrabarModal] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleAddClick() {
@@ -184,6 +192,42 @@ export function OrderPhotosUploaderClient({ orderId, initialPhotos, canUpload }:
       {isPending && (
         <p className="mt-3 text-center text-sm text-muted-foreground">Procesando…</p>
       )}
+
+      {photos.length >= 1 && (
+        <div className="mt-8">
+          <Button
+            size="lg"
+            className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            onClick={() => setShowGrabarModal(true)}
+            disabled={isPending}
+          >
+            <Sparkles className="h-5 w-5" />
+            Grabar
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={showGrabarModal} onOpenChange={setShowGrabarModal}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="flex justify-center pt-2">
+            <Image
+              src="/logo.png"
+              alt="Ayla Pets"
+              width={100}
+              height={100}
+              className="object-contain"
+            />
+          </div>
+          <DialogHeader className="mt-2">
+            <DialogTitle className="text-center font-heading text-2xl">
+              ¡Listo!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base leading-relaxed">
+              Gracias, ya recibimos tu pedido. A la brevedad nos contactaremos con vos para mostrarte el diseño a grabar.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null) }}>
         <AlertDialogContent>
