@@ -6,8 +6,8 @@ export const env = createEnv({
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     MP_ACCESS_TOKEN: z.string().min(1).optional(),
     MP_WEBHOOK_SECRET: z.string().min(1).optional(),
-    RESEND_API_KEY: z.string().min(1),
-    RESEND_FROM_EMAIL: z.email(),
+    RESEND_API_KEY: z.string().min(1).optional(),
+    RESEND_FROM_EMAIL: z.string().email().optional(),
     DATABASE_URL: z.url().optional(),
   },
   client: {

@@ -3,7 +3,7 @@ import { env } from '@/env'
 import { BRAND } from '@/lib/constants'
 import type { Order } from '@/types'
 
-const resend = new Resend(env.RESEND_API_KEY)
+const resend = new Resend(env.RESEND_API_KEY ?? '')
 
 export async function sendOrderConfirmation(order: Order): Promise<void> {
   try {
@@ -12,7 +12,7 @@ export async function sendOrderConfirmation(order: Order): Promise<void> {
       .join('\n')
 
     await resend.emails.send({
-      from: env.RESEND_FROM_EMAIL,
+      from: env.RESEND_FROM_EMAIL ?? '',
       to: order.customer.email,
       subject: `Confirmación de pedido #${order.id}`,
       text: [
