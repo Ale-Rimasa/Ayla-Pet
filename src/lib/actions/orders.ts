@@ -68,7 +68,7 @@ export async function updateOrderStatus(
   }
 
   revalidatePath('/admin/pedidos')
-  revalidateTag(`pedido:${orderId}`, {})
+  revalidateTag(`pedido:${orderId}`)
 
   return { ok: true }
 }

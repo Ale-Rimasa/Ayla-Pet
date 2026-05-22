@@ -316,13 +316,13 @@ export async function updateOrderStatus(
   const supabase = createAdminClient()
 
   // RPC not yet in generated types — regenerate after running migration 015.
+  // Llamar como método (no extraer a variable) para preservar el `this` del cliente Supabase.
   type UpdateStatusRpc = (
     fn: 'update_order_status_atomic',
     args: { p_order_id: string; p_from_status: OrderStatus; p_new_status: OrderStatus; p_actor_id: string | null }
   ) => Promise<{ data: { ok: boolean; error?: string } | null; error: { message: string } | null }>
 
-  const rpc = supabase.rpc as unknown as UpdateStatusRpc
-  const { data, error } = await rpc('update_order_status_atomic', {
+  const { data, error } = await (supabase.rpc as unknown as UpdateStatusRpc)('update_order_status_atomic', {
     p_order_id: id,
     p_from_status: fromStatus,
     p_new_status: status,
