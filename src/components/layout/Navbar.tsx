@@ -3,10 +3,25 @@ import Image from 'next/image'
 import { Search, Truck, Star, Heart } from 'lucide-react'
 import { CartIcon } from './CartIcon'
 import { MobileNav } from './MobileNav'
+import { ProductsMenuClient } from './ProductsMenuClient'
 import { BRAND } from '@/lib/constants'
-import { ProductsMenu } from './ProductsMenu'
+import { getCategories } from '@/lib/db/categories'
+import { getNavProducts } from '@/lib/db/products'
 
-export function Navbar() {
+export async function Navbar() {
+  const [categories, { data: products }] = await Promise.all([
+    getCategories(),
+    getNavProducts(),
+  ])
+
+  const navItems = categories.map((cat) => ({
+    name: cat.name,
+    slug: cat.slug,
+    products: products
+      .filter((p) => p.categoryId === cat.id)
+      .map((p) => ({ name: p.name, slug: p.slug })),
+  }))
+
   return (
     <>
       {/* Top info bar */}
@@ -36,7 +51,7 @@ export function Navbar() {
 
           {/* LEFT — mobile: hamburger | desktop: logo */}
           <div className="flex items-center">
-            <MobileNav />
+            <MobileNav categories={navItems} />
             <Link
               href="/"
               className="hidden lg:flex shrink-0 items-center gap-2 group"
@@ -84,7 +99,7 @@ export function Navbar() {
               >
                 Inicio
               </Link>
-              <ProductsMenu />
+              <ProductsMenuClient categories={navItems} />
               <Link
                 href="/quienes-somos"
                 className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
