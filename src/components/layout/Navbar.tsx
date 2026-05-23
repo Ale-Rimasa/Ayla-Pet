@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Truck, Star, Heart } from 'lucide-react'
 import { CartIcon } from './CartIcon'
+import { MobileNav } from './MobileNav'
 import { BRAND } from '@/lib/constants'
 import { ProductsMenu } from './ProductsMenu'
 
@@ -30,52 +31,77 @@ export function Navbar() {
 
       {/* Main header */}
       <header className="sticky top-0 z-40 w-full border-b border-[#E7DCCF] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="shrink-0 flex items-center gap-2 group"
-            aria-label={BRAND.name}
-          >
-            <Image
-              src="/logo.png"
-              alt={BRAND.name}
-              width={60}
-              height={60}
-              className="rounded-full object-cover transition-opacity group-hover:opacity-80"
-              priority
-            />
-            <span className="font-heading text-xl font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
-              {BRAND.name}
-            </span>
-          </Link>
+        {/* Mobile: 3-col grid [hamburger | logo | cart]. Desktop: flex row. */}
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 px-4 sm:px-6 lg:flex lg:gap-4 lg:px-8">
 
-          {/* Nav links */}
-          <nav className="hidden items-center gap-6 lg:flex" aria-label="Navegación principal">
+          {/* LEFT — mobile: hamburger | desktop: logo */}
+          <div className="flex items-center">
+            <MobileNav />
             <Link
               href="/"
-              className="text-sm font-medium text-[#1F1F1F] transition-colors hover:text-[#B68A57]"
+              className="hidden lg:flex shrink-0 items-center gap-2 group"
+              aria-label={BRAND.name}
             >
-              Inicio
+              <Image
+                src="/logo.png"
+                alt={BRAND.name}
+                width={60}
+                height={60}
+                className="rounded-full object-cover transition-opacity group-hover:opacity-80"
+                priority
+              />
+              <span className="font-heading text-xl font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
+                {BRAND.name}
+              </span>
             </Link>
-            <ProductsMenu />
-            <Link
-              href="/quienes-somos"
-              className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
-            >
-              Quiénes somos
-            </Link>
-            <Link
-              href="/#asi-de-simple"
-              className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
-            >
-              Cómo funciona
-            </Link>
-          </nav>
+          </div>
 
-          {/* Right actions */}
-          <div className="flex items-center gap-2">
-            {/* Search — desktop only */}
+          {/* CENTER — mobile: logo | desktop: nav */}
+          <div className="flex items-center justify-center lg:flex-1">
+            {/* Logo — mobile only */}
+            <Link
+              href="/"
+              className="flex lg:hidden shrink-0 items-center gap-1.5 group"
+              aria-label={BRAND.name}
+            >
+              <Image
+                src="/logo.png"
+                alt={BRAND.name}
+                width={44}
+                height={44}
+                className="rounded-full object-cover transition-opacity group-hover:opacity-80"
+              />
+              <span className="font-heading text-base font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
+                {BRAND.name}
+              </span>
+            </Link>
+
+            {/* Nav — desktop only */}
+            <nav className="hidden items-center gap-6 lg:flex" aria-label="Navegación principal">
+              <Link
+                href="/"
+                className="text-sm font-medium text-[#1F1F1F] transition-colors hover:text-[#B68A57]"
+              >
+                Inicio
+              </Link>
+              <ProductsMenu />
+              <Link
+                href="/quienes-somos"
+                className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
+              >
+                Quiénes somos
+              </Link>
+              <Link
+                href="/#asi-de-simple"
+                className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
+              >
+                Cómo funciona
+              </Link>
+            </nav>
+          </div>
+
+          {/* RIGHT — search (desktop) + cart */}
+          <div className="flex items-center justify-end gap-2">
             <form action="/productos" method="GET" className="hidden md:flex items-center gap-2 rounded-full border border-[#E7DCCF] bg-[#FAF7F2] px-3 py-1.5">
               <Search className="h-3.5 w-3.5 text-[#6B6258]" aria-hidden="true" />
               <input
@@ -86,10 +112,9 @@ export function Navbar() {
                 aria-label="Buscar productos"
               />
             </form>
-
-            {/* Cart */}
             <CartIcon />
           </div>
+
         </div>
       </header>
     </>
