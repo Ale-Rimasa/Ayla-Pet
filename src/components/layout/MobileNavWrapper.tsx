@@ -1,8 +1,8 @@
 import { getCategories } from '@/lib/db/categories'
 import { getNavProducts } from '@/lib/db/products'
-import { ProductsMenuClient } from './ProductsMenuClient'
+import { MobileNav } from './MobileNav'
 
-export async function ProductsMenu() {
+export async function MobileNavWrapper() {
   const [categories, { data: products }] = await Promise.all([
     getCategories(),
     getNavProducts(),
@@ -16,5 +16,5 @@ export async function ProductsMenu() {
       .map((p) => ({ name: p.name, slug: p.slug })),
   }))
 
-  return <ProductsMenuClient categories={navItems} />
+  return <MobileNav categories={navItems} />
 }

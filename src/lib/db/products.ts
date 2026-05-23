@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth'
@@ -214,3 +215,10 @@ export async function getProductsForAdmin(
     count: count ?? 0,
   }
 }
+
+/**
+ * Cached version for nav use only (no filters, pageSize 100).
+ * React.cache deduplicates per-request — ProductsMenu y MobileNavWrapper
+ * comparten el resultado sin hacer dos queries a Supabase.
+ */
+export const getNavProducts = cache(() => getProducts({ pageSize: 100 }))

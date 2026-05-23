@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth'
@@ -23,7 +24,7 @@ function mapCategory(row: {
   }
 }
 
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async function getCategories(): Promise<Category[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('categories')
@@ -31,7 +32,7 @@ export async function getCategories(): Promise<Category[]> {
     .is('deleted_at', null)
     .order('sort_order', { ascending: true })
   return (data ?? []).map(mapCategory)
-}
+})
 
 export async function getCategoriesForAdmin(
   opts: { includeDeleted?: boolean } = {}
