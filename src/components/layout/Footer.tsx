@@ -179,14 +179,9 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#6B6258]">
               <li>
-                <a
-                  href={whatsappContactUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors hover:text-[#B68A57]"
-                >
+                <Link href="/preguntas-frecuentes" className="transition-colors hover:text-[#B68A57]">
                   Preguntas frecuentes
-                </a>
+                </Link>
               </li>
             </ul>
 
