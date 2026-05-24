@@ -161,7 +161,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href={whatsappContactUrl}
+                  href="https://www.instagram.com/direct/t/18035284982615487/?hl=es"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transition-colors hover:text-[#B68A57]"
