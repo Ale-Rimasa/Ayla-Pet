@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: '¿Cómo es el proceso de personalización?',
-    a: 'Es súper simple y nosotros hacemos el trabajo pesado por vos. Una vez que realizás la compra, te contactamos por WhatsApp para el asesoramiento de diseño. Te ayudamos a elegir la tipografía, el nombre, el teléfono o la imagen de tu mascota hasta que quede exactamente como te lo imaginás.',
+    a: 'Es super simple. Una vez que realizas tu compra y subis tu foto te contactamos por WhatsApp para el asesoramiento de diseño.',
   },
   {
     q: '¿Puedo ver cómo va a quedar antes de que lo fabriquen?',
@@ -18,10 +18,6 @@ const FAQS = [
   {
     q: '¿Cuánto demora en estar listo?',
     a: 'Trabajamos sin stock genérico — cada pieza se crea bajo pedido. Una vez aprobado el diseño, tu pedido se fabrica y se despacha entre 24 y 48 hs hábiles.',
-  },
-  {
-    q: '¿Cómo me aseguro de que el producto real quede bien?',
-    a: 'Antes de cerrar la caja y despachar tu pedido, te enviamos una Foto de Aprobación Final de la pieza terminada. ¡Cero sorpresas! Lo que ves es lo que recibís.',
   },
   {
     q: '¿Tienen cambio o devolución?',
