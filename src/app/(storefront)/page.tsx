@@ -13,7 +13,7 @@ import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
 
 export const revalidate = 300
 
-const IG_CHAT_URL = 'https://www.instagram.com/direct/t/18035284982615487/?hl=es'
+const IG_CHAT_URL = 'https://ig.me/m/aylapets_'
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
