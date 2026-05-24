@@ -185,15 +185,6 @@ export function Footer() {
               </li>
             </ul>
 
-            <div className="pt-2">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#111111] mb-2">
-                Suscribite y recibí novedades
-              </p>
-              <p className="text-xs text-[#6B6258] mb-3">
-                Ofertas exclusivas y lanzamientos.
-              </p>
-              <NewsletterForm />
-            </div>
           </div>
         </div>
 

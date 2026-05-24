@@ -25,6 +25,7 @@ const STATIC_LINKS = [
   { href: '/', label: 'Inicio' },
   { href: '/quienes-somos', label: 'Quiénes somos' },
   { href: '/#asi-de-simple', label: 'Cómo funciona' },
+  { href: '/preguntas-frecuentes', label: 'Preguntas frecuentes' },
 ]
 
 export function MobileNav({ categories = [] }: Props) {

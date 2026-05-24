@@ -112,6 +112,12 @@ export async function Navbar() {
               >
                 Cómo funciona
               </Link>
+              <Link
+                href="/preguntas-frecuentes"
+                className="text-sm font-medium text-[#6B6258] transition-colors hover:text-[#B68A57]"
+              >
+                Preguntas frecuentes
+              </Link>
             </nav>
           </div>
 
