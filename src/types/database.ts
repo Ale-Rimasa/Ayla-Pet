@@ -167,6 +167,50 @@ export type Database = {
           },
         ]
       }
+      order_shipping_packages: {
+        Row: {
+          bulto_index: number
+          created_at: string
+          height_mm: number
+          id: string
+          length_mm: number
+          order_id: string
+          package_profile_id: string
+          weight_g: number
+          width_mm: number
+        }
+        Insert: {
+          bulto_index: number
+          created_at?: string
+          height_mm: number
+          id?: string
+          length_mm: number
+          order_id: string
+          package_profile_id: string
+          weight_g: number
+          width_mm: number
+        }
+        Update: {
+          bulto_index?: number
+          created_at?: string
+          height_mm?: number
+          id?: string
+          length_mm?: number
+          order_id?: string
+          package_profile_id?: string
+          weight_g?: number
+          width_mm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_shipping_packages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           actor_id: string | null
@@ -501,6 +545,78 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_package_profiles: {
+        Row: {
+          created_at: string
+          height_mm: number | null
+          id: string
+          is_active: boolean
+          label: string
+          length_mm: number | null
+          weight_g: number | null
+          width_mm: number | null
+        }
+        Insert: {
+          created_at?: string
+          height_mm?: number | null
+          id: string
+          is_active?: boolean
+          label: string
+          length_mm?: number | null
+          weight_g?: number | null
+          width_mm?: number | null
+        }
+        Update: {
+          created_at?: string
+          height_mm?: number | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          length_mm?: number | null
+          weight_g?: number | null
+          width_mm?: number | null
+        }
+        Relationships: []
+      }
+      variant_shipping_packages: {
+        Row: {
+          created_at: string
+          id: string
+          package_profile_id: string
+          quantity: number
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_profile_id: string
+          quantity?: number
+          variant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_profile_id?: string
+          quantity?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variant_shipping_packages_package_profile_id_fkey"
+            columns: ["package_profile_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_package_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_shipping_packages_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -510,23 +626,61 @@ export type Database = {
         Args: { p_email: string; p_user_id: string }
         Returns: number
       }
-      create_order: {
-        Args: {
-          p_customer_email: string
-          p_customer_name: string
-          p_customer_phone: string
-          p_items?: Json
-          p_notes?: string
-          p_shipping_city: string
-          p_shipping_cost: number
-          p_shipping_postal_code: string
-          p_shipping_province: string
-          p_shipping_street: string
-          p_subtotal: number
-          p_total: number
-        }
-        Returns: string
-      }
+      create_order:
+        | {
+            Args: {
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_items?: Json
+              p_notes?: string
+              p_shipping_city: string
+              p_shipping_cost: number
+              p_shipping_postal_code: string
+              p_shipping_province: string
+              p_shipping_street: string
+              p_subtotal: number
+              p_total: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_items?: Json
+              p_notes?: string
+              p_shipping_city: string
+              p_shipping_cost: number
+              p_shipping_postal_code: string
+              p_shipping_province: string
+              p_shipping_street: string
+              p_subtotal: number
+              p_total: number
+              p_user_id?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_items?: Json
+              p_notes?: string
+              p_shipping_city: string
+              p_shipping_cost: number
+              p_shipping_packages?: Json
+              p_shipping_postal_code: string
+              p_shipping_province: string
+              p_shipping_street: string
+              p_subtotal: number
+              p_total: number
+              p_user_id?: string
+            }
+            Returns: string
+          }
       decrement_stock: {
         Args: { p_qty: number; p_variant_id: string }
         Returns: {

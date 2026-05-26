@@ -34,10 +34,3 @@ export const TRANSFER = {
   titular: 'Jose Alejandro Rimasa',      
   banco: 'Galicia',                  
 } as const
-
-// centavos ARS
-export const SHIPPING_COSTS: Record<'standard' | 'express' | 'pickup', number> = {
-  standard: 500000,
-  express: 900000,
-  pickup: 0,
-} as const

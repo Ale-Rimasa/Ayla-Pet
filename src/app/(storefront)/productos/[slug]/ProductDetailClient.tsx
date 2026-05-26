@@ -7,6 +7,8 @@ import { VariantSelector } from '@/components/product/VariantSelector'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { PriceDisplay } from '@/components/shared/PriceDisplay'
+import { ShippingQuoteAccordion } from '@/components/product/ShippingQuoteAccordion'
+import { PaymentMethodsAccordion } from '@/components/product/PaymentMethodsAccordion'
 import type { Product, ProductVariant } from '@/types'
 
 interface ProductDetailClientProps {
@@ -81,6 +83,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               label="Consultar"
               className="flex-1"
             />
+          </div>
+
+          {/* Acordeones informativos */}
+          <div className="space-y-2">
+            {selectedVariant && (
+              <ShippingQuoteAccordion
+                items={[{ variantId: selectedVariant.id, quantity: 1 }]}
+                showEstimationNote
+              />
+            )}
+            <PaymentMethodsAccordion />
           </div>
         </div>
       </div>

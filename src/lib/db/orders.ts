@@ -2,6 +2,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth'
 import type { Order, OrderItem, OrderStatus, CreateOrderPayload } from '@/types'
+import type { Database, Json } from '@/types/database'
+
+// Extraemos el overload con p_shipping_packages para tipado seguro del RPC.
+type CreateOrderArgs = Extract<
+  Database['public']['Functions']['create_order'],
+  { Args: { p_shipping_packages?: Json } }
+>['Args']
 
 interface DbOrderItem {
   id: string
@@ -140,16 +147,18 @@ export async function createOrder(
       subtotal: item.subtotal,
       image_url: item.imageUrl ?? null,
     })),
+    // Snapshot de bultos — persistido atómicamente junto con la orden
+    p_shipping_packages: (payload.shippingPackages ?? []).map((pkg) => ({
+      package_profile_id: pkg.packageProfileId,
+      bulto_index: pkg.bultoIndex,
+      weight_g: pkg.weightG,
+      height_mm: pkg.heightMm,
+      width_mm: pkg.widthMm,
+      length_mm: pkg.lengthMm,
+    })),
   }
 
-  // RPC type generation predates optional p_user_id; regenerate DB types after migration 018.
-  // Llamar como método (no extraer a variable) para preservar el `this` del cliente Supabase.
-  type CreateOrderRpc = (
-    fn: 'create_order',
-    args: typeof params
-  ) => Promise<{ data: string | null; error: { message: string } | null }>
-
-  const { data, error } = await (supabase.rpc as unknown as CreateOrderRpc)('create_order', params)
+  const { data, error } = await supabase.rpc('create_order', params as CreateOrderArgs)
 
   if (error) {
     return { ok: false, error: error.message }
@@ -240,7 +249,7 @@ export async function getOrdersForCustomer(
   const { data, count, error } = await supabase
     .from('orders')
     .select('*, order_items(*)', { count: 'exact' })
-    .eq('user_id' as never, userId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -258,11 +267,14 @@ export async function getOrderForCustomer(
 ): Promise<Order | null> {
   const supabase = await createClient()
 
+  // Validar email antes de usarlo en filtro PostgREST (evitar romper la sintaxis con comas/paréntesis).
+  const safeEmail = /^[^,)(]+@[^,)(]+$/.test(user.email) ? user.email : ''
+
   const { data, error } = await supabase
     .from('orders')
     .select('*, order_items(*)')
     .eq('id', id)
-    .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+    .or(`user_id.eq.${user.id}${safeEmail ? `,customer_email.eq.${safeEmail}` : ''}`)
     .maybeSingle()
 
   if (error || !data) return null

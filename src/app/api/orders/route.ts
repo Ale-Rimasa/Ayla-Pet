@@ -3,8 +3,41 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createOrder } from '@/lib/db/orders'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { SHIPPING_COSTS } from '@/lib/constants'
+import { resolveShippingPackages, packagesToSnapshots } from '@/lib/shipping-package'
+import { getShippingQuote, AndreaniUnavailableError } from '@/lib/andreani'
+import { SHIPPING_METHODS } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
+
+// ─── Protección: no permitir checkout real con precios simulados ──────────────
+//
+// En ANDREANI_MODE=mock, el checkout queda deshabilitado en entornos públicos
+// a menos que SHIPPING_CHECKOUT_ENABLED=true esté explícitamente seteado.
+// En desarrollo local este check no aplica.
+
+function checkCheckoutEnabled(): NextResponse | null {
+  const mode = process.env.ANDREANI_MODE
+  const enabled = process.env.SHIPPING_CHECKOUT_ENABLED
+
+  if (
+    mode === 'mock' &&
+    process.env.NODE_ENV === 'production' &&
+    enabled !== 'true'
+  ) {
+    return NextResponse.json(
+      {
+        error: 'checkout_disabled',
+        message:
+          'El checkout está temporalmente deshabilitado. ' +
+          'La integración de envíos está pendiente de configuración.',
+      },
+      { status: 503 }
+    )
+  }
+
+  return null
+}
+
+// ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const orderItemSchema = z.object({
   variantId: z.string().uuid(),
@@ -24,9 +57,11 @@ const bodySchema = z.object({
     postalCode: z.string().min(1),
   }),
   items: z.array(orderItemSchema).min(1),
-  shippingMethod: z.enum(['standard', 'express', 'pickup']),
+  shippingMethod: z.enum(SHIPPING_METHODS),
+  // Opcional: precio visto por el cliente. Solo usado para detectar cambio de precio.
+  // El servidor SIEMPRE calcula el costo definitivo — este valor nunca determina el total.
+  clientShippingCost: z.number().int().min(0).optional(),
   notes: z.string().optional(),
-  clientTotal: z.number().int().min(0).optional(),
 })
 
 type VariantWithProduct = {
@@ -36,12 +71,20 @@ type VariantWithProduct = {
   products: { name: string; images: string[] | null } | null
 }
 
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
+  // 1. Protección checkout en producción con mock
+  const checkoutGuard = checkCheckoutEnabled()
+  if (checkoutGuard) return checkoutGuard
+
+  // 2. Rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (!await checkRateLimit(`orders:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
+  // 3. Parse body
   let body: unknown
   try {
     body = await request.json()
@@ -57,16 +100,13 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { customer, shipping, items, shippingMethod, notes } = parsed.data
+  const { customer, shipping, items, shippingMethod, clientShippingCost, notes } = parsed.data
 
-  const shippingCost = SHIPPING_COSTS[shippingMethod]
-
+  // 4. Leer precios de variantes desde DB (nunca del cliente)
   const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const variantIds = items.map((item) => item.variantId)
+  const { data: { user } } = await supabase.auth.getUser()
 
+  const variantIds = items.map((item) => item.variantId)
   const { data: variants, error: variantError } = await supabase
     .from('product_variants')
     .select('id, name, price, products!inner(name, images)')
@@ -82,13 +122,11 @@ export async function POST(request: NextRequest) {
 
   for (const item of items) {
     if (!variantMap.has(item.variantId)) {
-      return NextResponse.json(
-        { error: `Variant not found: ${item.variantId}` },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: `Variant not found: ${item.variantId}` }, { status: 400 })
     }
   }
 
+  // 5. Calcular subtotal server-side
   const orderItems: CreateOrderItemPayload[] = items.map((item) => {
     const variant = variantMap.get(item.variantId)!
     const product = variant.products
@@ -111,21 +149,76 @@ export async function POST(request: NextRequest) {
   })
 
   const subtotal = orderItems.reduce((acc, item) => acc + item.subtotal, 0)
-  const total = subtotal + shippingCost
 
-  if (parsed.data.clientTotal !== undefined && parsed.data.clientTotal !== total) {
-    return NextResponse.json({ error: 'price_mismatch' }, { status: 400 })
+  // 6. Resolver paquetes desde DB y cotizar con Andreani (server-side)
+  const resolved = await resolveShippingPackages(
+    items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))
+  )
+
+  if (!resolved.ok) {
+    return NextResponse.json(
+      { error: 'unresolvable_package', reason: resolved.reason },
+      { status: 422 }
+    )
   }
 
+  // Valor declarado = subtotal calculado server-side
+  const packageData = resolved.packages.map((p) => ({
+    weightG: p.weightG,
+    heightMm: p.heightMm,
+    widthMm: p.widthMm,
+    lengthMm: p.lengthMm,
+  }))
+
+  let validatedShippingCost: number
+  try {
+    const quote = await getShippingQuote({
+      destinationCp: shipping.postalCode,
+      packages: packageData,
+      declaredValueCentavos: subtotal,
+      bypassCache: true, // Siempre cotización fresca para crear una orden
+    })
+    validatedShippingCost = quote.price
+  } catch (err) {
+    if (err instanceof AndreaniUnavailableError) {
+      return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
+    }
+    console.error('[POST /api/orders] getShippingQuote error', err)
+    return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
+  }
+
+  const total = subtotal + validatedShippingCost
+
+  // 7. Detectar cambio de precio (el cliente envía su precio para comparación)
+  //    Si difieren → 409. El cliente muestra el nuevo precio y pide confirmación.
+  //    La orden NO se crea hasta que el cliente confirme.
+  if (
+    clientShippingCost !== undefined &&
+    clientShippingCost !== validatedShippingCost
+  ) {
+    return NextResponse.json(
+      {
+        error: 'shipping_price_changed',
+        newShippingCost: validatedShippingCost,
+        newTotal: total,
+      },
+      { status: 409 }
+    )
+  }
+
+  // 8. Crear orden con costo validado server-side + snapshot de bultos
+  const packageSnapshots = packagesToSnapshots(resolved.packages)
+
   const result = await createOrder({
-    userId: session?.user.id ?? null,
+    userId: user?.id ?? null,
     customer,
     shipping,
     items: orderItems,
     subtotal,
-    shippingCost,
+    shippingCost: validatedShippingCost,
     total,
     notes,
+    shippingPackages: packageSnapshots,
   })
 
   if (!result.ok) {

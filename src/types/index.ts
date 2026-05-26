@@ -119,9 +119,10 @@ export interface CreateOrderPayload {
   shipping: ShippingAddress
   items: CreateOrderItemPayload[]
   subtotal: number        // centavos ARS
-  shippingCost: number    // centavos ARS
+  shippingCost: number    // centavos ARS (calculado server-side, nunca del cliente)
   total: number           // centavos ARS
   notes?: string
+  shippingPackages?: import('@/types/shipping').ShippingPackageSnapshot[]
 }
 
 export interface GetProductsOptions {

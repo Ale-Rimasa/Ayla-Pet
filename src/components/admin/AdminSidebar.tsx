@@ -12,6 +12,7 @@ import {
   Percent,
   Settings,
   ExternalLink,
+  BoxIcon,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const activeItems = [
   { label: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
   { label: 'Clientes', href: '/admin/clientes', icon: Users },
   { label: 'Estadísticas', href: '/admin/estadisticas', icon: BarChart2 },
+  { label: 'Embalajes', href: '/admin/embalajes', icon: BoxIcon },
   { label: 'Configuración', href: '/admin/configuracion', icon: Settings },
 ]
 

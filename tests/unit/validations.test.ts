@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { CheckoutSchema } from '@/lib/validations'
+import { SHIPPING_METHODS } from '@/types/shipping'
 
 const validData = {
   customer: {
@@ -13,7 +14,7 @@ const validData = {
     province: 'Buenos Aires',
     postalCode: '1043',
   },
-  shippingMethod: 'standard' as const,
+  shippingMethod: 'andreani-domicilio' as const,
 }
 
 describe('CheckoutSchema', () => {
@@ -78,11 +79,20 @@ describe('CheckoutSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('accepts all three valid shipping methods', () => {
-    const methods = ['standard', 'express', 'pickup'] as const
-    for (const method of methods) {
+  it('accepts all current valid shipping methods', () => {
+    for (const method of SHIPPING_METHODS) {
       const result = CheckoutSchema.safeParse({ ...validData, shippingMethod: method })
       expect(result.success).toBe(true)
     }
+  })
+
+  it('accepts optional clientShippingCost as integer centavos', () => {
+    const result = CheckoutSchema.safeParse({ ...validData, clientShippingCost: 150000 })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts missing clientShippingCost', () => {
+    const result = CheckoutSchema.safeParse(validData)
+    expect(result.success).toBe(true)
   })
 })
