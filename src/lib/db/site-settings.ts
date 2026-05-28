@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth'
 import { BRAND, TRANSFER, HERO_DEFAULTS } from '@/lib/constants'
+import type { Json } from '@/types/database'
 import { MAX_HERO_IMAGES } from '@/lib/validations/settings'
 import type {
   SiteSettingKey,
@@ -84,7 +85,7 @@ export async function upsertSetting<K extends SiteSettingKey>(
   const supabase = createAdminClient()
   const { error } = await supabase
     .from('site_settings')
-    .upsert({ key, value }, { onConflict: 'key' })
+    .upsert({ key, value: value as unknown as Json }, { onConflict: 'key' })
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
