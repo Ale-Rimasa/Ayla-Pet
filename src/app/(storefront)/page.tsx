@@ -137,31 +137,13 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: hero carousel + chapitas card */}
-            <div className="relative hidden lg:flex items-end justify-end overflow-hidden">
+            {/* Right: hero carousel */}
+            <div className="relative hidden lg:block overflow-hidden">
               <HeroCarousel
                 images={hero.images}
                 fallbackSrc="/referencias-ui/home-rustica-beige-blanco-negro.png"
                 alt="Perro con chapita grabada Pet Laser"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-sf-cream via-sf-cream/20 to-transparent z-10" />
-
-              <div className="relative z-20 mb-12 mr-6 rounded-2xl bg-white/90 backdrop-blur-sm shadow-lg border border-sf-sand p-5 max-w-[260px]">
-                <div className="flex gap-3 mb-3">
-                  {['LUNA', 'MILO', 'OLI'].map((name) => (
-                    <div key={name} className="flex flex-col items-center gap-1">
-                      <div className="h-14 w-14 rounded-full bg-sf-gold/20 border-2 border-sf-gold/30 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-sf-gold text-center leading-tight">
-                          {name}<br />
-                          <span className="font-normal text-sf-warm">11 2345 6789</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm font-semibold text-sf-ink">Chapitas con datos</p>
-                <p className="text-xs text-sf-warm">Nombre y teléfono siempre a mano.</p>
-              </div>
             </div>
           </div>
         </div>
