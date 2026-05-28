@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import {
   Store,
   Globe,
@@ -7,17 +6,36 @@ import {
   Download,
   ImageIcon,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { BRAND, TRANSFER } from '@/lib/constants'
+import {
+  getHeroConfig,
+  getStoreInfo,
+  getTransferInfo,
+  getMaintenanceConfig,
+  getBrandingConfig,
+} from '@/lib/db/site-settings'
+import { HeroSettingsForm } from './_components/HeroSettingsForm'
+import { HeroImagesUploader } from './_components/HeroImagesUploader'
+import { StoreInfoForm } from './_components/StoreInfoForm'
+import { TransferForm } from './_components/TransferForm'
+import { MaintenanceToggle } from './_components/MaintenanceToggle'
+import { LogoForm } from './_components/LogoForm'
 
 export const metadata = { title: 'Configuración' }
 
-export default function ConfiguracionPage() {
+export default async function ConfiguracionPage() {
+  const [hero, store, transfer, maintenance, branding] = await Promise.all([
+    getHeroConfig(),
+    getStoreInfo(),
+    getTransferInfo(),
+    getMaintenanceConfig(),
+    getBrandingConfig(),
+  ])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -33,85 +51,60 @@ export default function ConfiguracionPage() {
         {/* ── Columna principal ── */}
         <div className="space-y-6 lg:col-span-2">
 
+          {/* Imágenes del carrusel hero */}
+          <Card>
+            <CardHeader className="border-b">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-sf-gold" />
+                <CardTitle>Imágenes del carrusel</CardTitle>
+              </div>
+              <CardDescription>
+                Hasta 3 imágenes para el hero del home. Se muestran en rotación automática.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <HeroImagesUploader initialImages={hero.images} />
+              <Separator />
+              <div>
+                <p className="text-sm font-medium mb-3">Texto del hero</p>
+                <HeroSettingsForm initial={{ title: hero.title, subtitle: hero.subtitle }} />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Información de la tienda */}
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Store className="h-4 w-4 text-[#B68A57]" />
+                <Store className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Información de la tienda</CardTitle>
               </div>
               <CardDescription>Datos de contacto y presentación pública.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="nombre">Nombre de la tienda</Label>
-                  <Input id="nombre" defaultValue={BRAND.name} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email de contacto</Label>
-                  <Input id="email" type="email" defaultValue={BRAND.email} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="dominio">Dominio</Label>
-                  <Input id="dominio" defaultValue={BRAND.domain} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="instagram">Instagram</Label>
-                  <Input id="instagram" defaultValue={BRAND.instagram} disabled />
-                </div>
-              </div>
+            <CardContent className="pt-4">
+              <StoreInfoForm initial={store} />
             </CardContent>
-            <CardFooter className="justify-between">
-              <span className="text-xs text-muted-foreground">
-                Editá estos valores en <code className="rounded bg-muted px-1 py-0.5 text-xs">lib/constants.ts</code>
-              </span>
-              <Button size="sm" disabled>Guardar cambios</Button>
-            </CardFooter>
           </Card>
 
           {/* Medios de pago - Transferencia */}
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-[#B68A57]" />
+                <Globe className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Transferencia bancaria</CardTitle>
               </div>
               <CardDescription>Datos de la cuenta para pagos por transferencia.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>Banco</Label>
-                  <Input defaultValue={TRANSFER.banco} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Titular</Label>
-                  <Input defaultValue={TRANSFER.titular} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>CBU</Label>
-                  <Input defaultValue={TRANSFER.cbu} disabled />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Alias</Label>
-                  <Input defaultValue={TRANSFER.alias} disabled />
-                </div>
-              </div>
+            <CardContent className="pt-4">
+              <TransferForm initial={transfer} />
             </CardContent>
-            <CardFooter className="justify-between">
-              <span className="text-xs text-muted-foreground">
-                Editá estos valores en <code className="rounded bg-muted px-1 py-0.5 text-xs">lib/constants.ts</code>
-              </span>
-              <Button size="sm" disabled>Guardar cambios</Button>
-            </CardFooter>
           </Card>
 
-          {/* Moneda y zona horaria */}
+          {/* Moneda y zona horaria — disabled, out of scope */}
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-[#B68A57]" />
+                <Globe className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Moneda y zona horaria</CardTitle>
               </div>
             </CardHeader>
@@ -129,11 +122,11 @@ export default function ConfiguracionPage() {
             </CardContent>
           </Card>
 
-          {/* Idioma */}
+          {/* Idioma — disabled, out of scope */}
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Languages className="h-4 w-4 text-[#B68A57]" />
+                <Languages className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Idioma</CardTitle>
               </div>
             </CardHeader>
@@ -155,23 +148,13 @@ export default function ConfiguracionPage() {
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-[#B68A57]" />
+                <Wrench className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Mantenimiento de la tienda</CardTitle>
               </div>
               <CardDescription>Activá el modo mantenimiento para pausar la tienda.</CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <p className="text-sm font-medium">Modo mantenimiento</p>
-                  <p className="text-xs text-muted-foreground">
-                    Los clientes verán una página de "próximamente" mientras está activo.
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-muted-foreground">
-                  Próximamente
-                </Badge>
-              </div>
+              <MaintenanceToggle initial={maintenance.enabled} />
             </CardContent>
           </Card>
 
@@ -184,39 +167,20 @@ export default function ConfiguracionPage() {
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-[#B68A57]" />
+                <ImageIcon className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Logo y marca</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="flex items-center justify-center rounded-lg border bg-muted/30 p-6">
-                <Image
-                  src="/logo.png"
-                  alt={BRAND.name}
-                  width={96}
-                  height={96}
-                  className="rounded-full object-cover"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1" disabled>
-                  Cambiar logo
-                </Button>
-                <Button size="sm" variant="outline" disabled>
-                  Eliminar
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                PNG, JPG o SVG. Máx. 2MB.
-              </p>
+            <CardContent className="pt-4">
+              <LogoForm initial={branding} />
             </CardContent>
           </Card>
 
-          {/* Exportación */}
+          {/* Exportación — disabled, out of scope */}
           <Card>
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
-                <Download className="h-4 w-4 text-[#B68A57]" />
+                <Download className="h-4 w-4 text-sf-gold" />
                 <CardTitle>Exportación</CardTitle>
               </div>
               <CardDescription>Descargá tus datos en formato CSV.</CardDescription>

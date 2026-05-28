@@ -7,7 +7,7 @@ export function createMockChain<T = unknown>(response: MockResponse<T>) {
 
   // Fluent chainable methods (return this)
   const chainMethods = [
-    'from', 'select', 'insert', 'update', 'delete',
+    'from', 'select', 'insert', 'update', 'delete', 'upsert',
     'eq', 'neq', 'is', 'in', 'gte', 'lte', 'gt', 'lt',
     'order', 'range', 'limit', 'filter', 'or',
   ]
@@ -36,6 +36,7 @@ export type MockChain<T = unknown> = {
   insert: ReturnType<typeof vi.fn>
   update: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>
+  upsert: ReturnType<typeof vi.fn>
   eq: ReturnType<typeof vi.fn>
   neq: ReturnType<typeof vi.fn>
   is: ReturnType<typeof vi.fn>

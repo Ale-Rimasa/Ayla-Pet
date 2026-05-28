@@ -5,8 +5,8 @@ import { metadata as productosMetadata } from '@/app/(storefront)/productos/page
 // generateMetadata pages ([slug]) require DB mocks — covered by E2E (navbar.spec, footer.spec)
 
 describe('BRAND.name — source of truth', () => {
-  it('equals "Ayla Pet"', () => {
-    expect(BRAND.name).toBe('Ayla Pet')
+  it('equals "Ayla Pets"', () => {
+    expect(BRAND.name).toBe('Ayla Pets')
   })
 
   it('does NOT contain "Jengibre"', () => {

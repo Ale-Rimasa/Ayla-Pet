@@ -29,8 +29,17 @@ export const CATEGORY_SLUGS = {
 } as const
 
 export const TRANSFER = {
-  cbu: '0070693930004003890360', 
-  alias: 'Aylapets',              
-  titular: 'Jose Alejandro Rimasa',      
-  banco: 'Galicia',                  
+  cbu: '0070693930004003890360',
+  alias: 'Aylapets',
+  titular: 'Jose Alejandro Rimasa',
+  banco: 'Galicia',
+} as const
+
+export const HERO_DEFAULTS = {
+  title: 'Su esencia grabada para siempre',
+  subtitle: 'Piezas personalizadas creadas para celebrar el vínculo con tu mascota',
+} as const
+
+export const LINKS = {
+  igChat: 'https://ig.me/m/aylapets_',
 } as const

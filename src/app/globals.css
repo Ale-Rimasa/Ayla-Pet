@@ -28,6 +28,14 @@
     /* Brand — olive botanical */
     --brand-olive: #717552;
     --brand-olive-dark: #5f6347;
+    /* Storefront palette */
+    --sf-cream: #FAF7F2;
+    --sf-cream-deep: #F5EFE6;
+    --sf-ink: #111111;
+    --sf-ink-soft: #1F1F1F;
+    --sf-warm: #6B6258;
+    --sf-gold: #B68A57;
+    --sf-sand: #E7DCCF;
     /* Sidebar — olive/dark botanical */
     --sidebar: oklch(28% 0.04 135);
     --sidebar-foreground: oklch(88% 0.015 85);
@@ -122,6 +130,14 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  /* Storefront palette */
+  --color-sf-cream: var(--sf-cream);
+  --color-sf-cream-deep: var(--sf-cream-deep);
+  --color-sf-ink: var(--sf-ink);
+  --color-sf-ink-soft: var(--sf-ink-soft);
+  --color-sf-warm: var(--sf-warm);
+  --color-sf-gold: var(--sf-gold);
+  --color-sf-sand: var(--sf-sand);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

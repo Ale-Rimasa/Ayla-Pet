@@ -9,11 +9,12 @@ import {
   Heart,
 } from 'lucide-react'
 import { getCategories } from '@/lib/db/categories'
-import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
+import { getHeroConfig } from '@/lib/db/site-settings'
+import { CATEGORY_SLUGS, LINKS } from '@/lib/constants'
+import { HeroCarousel } from '@/components/storefront/HeroCarousel'
 
+// Next.js route segment config requires a statically-analyzable literal — cannot use imported constant
 export const revalidate = 300
-
-const IG_CHAT_URL = 'https://ig.me/m/aylapets_'
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -70,7 +71,12 @@ const TESTIMONIALS = [
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
-function StarRating({ stars, half = false }: { stars: number; half?: boolean }) {
+interface StarRatingProps {
+  stars: number
+  half?: boolean
+}
+
+function StarRating({ stars, half = false }: StarRatingProps) {
   return (
     <div className="flex items-center gap-0.5" aria-label={`${stars} estrellas`}>
       {Array.from({ length: 5 }).map((_, i) => (
@@ -78,10 +84,10 @@ function StarRating({ stars, half = false }: { stars: number; half?: boolean }) 
           key={i}
           className={`h-3.5 w-3.5 ${
             i < stars
-              ? 'fill-[#B68A57] text-[#B68A57]'
+              ? 'fill-sf-gold text-sf-gold'
               : half && i === stars
-                ? 'fill-[#B68A57]/50 text-[#B68A57]/50'
-                : 'fill-[#E7DCCF] text-[#E7DCCF]'
+                ? 'fill-sf-gold/50 text-sf-gold/50'
+                : 'fill-sf-sand text-sf-sand'
           }`}
           aria-hidden="true"
         />
@@ -93,39 +99,37 @@ function StarRating({ stars, half = false }: { stars: number; half?: boolean }) 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
-  const categories = await getCategories()
+  const [categories, hero] = await Promise.all([getCategories(), getHeroConfig()])
 
   return (
     <>
       {/* ═══════════════════════════════════════════════════════════════
           HERO
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-[#FAF7F2]">
+      <section className="relative overflow-hidden bg-sf-cream">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid min-h-[520px] grid-cols-1 lg:grid-cols-2 lg:min-h-[560px]">
 
             {/* Left: copy */}
             <div className="flex flex-col justify-center gap-5 py-14 lg:py-20 lg:pr-8 z-10">
-              <h1 className="font-heading text-5xl font-bold leading-[1.1] tracking-tight text-[#111111] sm:text-6xl lg:text-[4.5rem]">
-                Grabados que<br />
-                los acompañan<br />
-                siempre
+              <h1 className="font-heading text-5xl font-bold leading-[1.1] tracking-tight text-sf-ink sm:text-6xl lg:text-[4.5rem]">
+                {hero.title}
               </h1>
-              <p className="max-w-sm text-base text-[#6B6258] leading-relaxed">
-                Accesorios personalizados que guardan su nombre, su historia y el amor que nos dan.
+              <p className="max-w-sm text-base text-sf-warm leading-relaxed">
+                {hero.subtitle}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/productos"
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-sf-ink px-6 text-sm font-semibold text-white transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sf-ink"
                 >
                   VER PRODUCTOS
                 </Link>
                 <a
-                  href={IG_CHAT_URL}
+                  href={LINKS.igChat}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#111111] bg-transparent px-6 text-sm font-semibold text-[#111111] transition-colors hover:bg-[#111111] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-sf-ink bg-transparent px-6 text-sm font-semibold text-sf-ink transition-colors hover:bg-sf-ink hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sf-ink"
                 >
                   CONTACTO
                   <span aria-hidden="true">🐾</span>
@@ -133,49 +137,43 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: dog image + chapitas card */}
+            {/* Right: hero carousel + chapitas card */}
             <div className="relative hidden lg:flex items-end justify-end overflow-hidden">
-              <Image
-                src="/referencias-ui/home-rustica-beige-blanco-negro.png"
+              <HeroCarousel
+                images={hero.images}
+                fallbackSrc="/referencias-ui/home-rustica-beige-blanco-negro.png"
                 alt="Perro con chapita grabada Pet Laser"
-                fill
-                priority
-                sizes="(max-width: 1024px) 0px, 50vw"
-                className="object-cover object-[70%_20%]"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FAF7F2] via-[#FAF7F2]/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-sf-cream via-sf-cream/20 to-transparent z-10" />
 
-              <div className="relative z-10 mb-12 mr-6 rounded-2xl bg-white/90 backdrop-blur-sm shadow-lg border border-[#E7DCCF] p-5 max-w-[260px]">
+              <div className="relative z-20 mb-12 mr-6 rounded-2xl bg-white/90 backdrop-blur-sm shadow-lg border border-sf-sand p-5 max-w-[260px]">
                 <div className="flex gap-3 mb-3">
                   {['LUNA', 'MILO', 'OLI'].map((name) => (
                     <div key={name} className="flex flex-col items-center gap-1">
-                      <div className="h-14 w-14 rounded-full bg-[#B68A57]/20 border-2 border-[#B68A57]/30 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-[#B68A57] text-center leading-tight">
+                      <div className="h-14 w-14 rounded-full bg-sf-gold/20 border-2 border-sf-gold/30 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-sf-gold text-center leading-tight">
                           {name}<br />
-                          <span className="font-normal text-[#6B6258]">11 2345 6789</span>
+                          <span className="font-normal text-sf-warm">11 2345 6789</span>
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-sm font-semibold text-[#111111]">Chapitas con datos</p>
-                <p className="text-xs text-[#6B6258]">Nombre y teléfono siempre a mano.</p>
+                <p className="text-sm font-semibold text-sf-ink">Chapitas con datos</p>
+                <p className="text-xs text-sf-warm">Nombre y teléfono siempre a mano.</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile hero image below copy */}
+        {/* Mobile hero carousel below copy */}
         <div className="relative h-64 w-full overflow-hidden lg:hidden">
-          <Image
-            src="/referencias-ui/home-rustica-beige-blanco-negro.png"
+          <HeroCarousel
+            images={hero.images}
+            fallbackSrc="/referencias-ui/home-rustica-beige-blanco-negro.png"
             alt="Perro con chapita grabada Pet Laser"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-top"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#FAF7F2]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-sf-cream/60 to-transparent z-10" />
         </div>
       </section>
 
@@ -184,7 +182,7 @@ export default async function HomePage() {
       ═══════════════════════════════════════════════════════════════ */}
       <section className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-heading text-2xl font-semibold text-center text-[#111111] mb-10 sm:text-3xl">
+          <h2 className="font-heading text-2xl font-semibold text-center text-sf-ink mb-10 sm:text-3xl">
             Elegí cómo llevar su esencia
           </h2>
 
@@ -196,7 +194,7 @@ export default async function HomePage() {
                   href={`/categorias/${cat.slug}`}
                   className="group flex flex-col gap-3"
                 >
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-[#F5EFE6]">
+                  <div className="relative aspect-square overflow-hidden rounded-xl bg-sf-cream-deep">
                     {cat.imageUrl ? (
                       <Image
                         src={cat.imageUrl}
@@ -206,22 +204,22 @@ export default async function HomePage() {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="h-full w-full bg-[#F5EFE6]" />
+                      <div className="h-full w-full bg-sf-cream-deep" />
                     )}
                   </div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-[#111111] leading-tight">
+                      <p className="text-sm font-semibold text-sf-ink leading-tight">
                         {cat.name}
                       </p>
                       {cat.description && (
-                        <p className="text-xs text-[#6B6258] mt-0.5 line-clamp-1">
+                        <p className="text-xs text-sf-warm mt-0.5 line-clamp-1">
                           {cat.description}
                         </p>
                       )}
                     </div>
                     <span
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#E7DCCF] text-[#6B6258] text-sm transition-colors group-hover:border-[#B68A57] group-hover:text-[#B68A57]"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sf-sand text-sf-warm text-sm transition-colors group-hover:border-sf-gold group-hover:text-sf-gold"
                       aria-hidden="true"
                     >
                       →
@@ -235,7 +233,7 @@ export default async function HomePage() {
               {[
                 { name: 'Chapitas con datos', desc: 'Nombre y teléfono grabados', slug: CATEGORY_SLUGS.MASCOTAS },
                 { name: 'Llaveros con imagen', desc: 'Su retrato, siempre con vos', slug: CATEGORY_SLUGS.CHAPAS },
-                { name: 'Pulseras con imagen', desc: 'Un vínculo que se lleva en la piel', slug: CATEGORY_SLUGS.MASCOTAS },
+                { name: 'Pulseras con imagen', desc: 'Un vínculo que se lleva en la piel', slug: CATEGORY_SLUGS.CHAPAS },
                 { name: 'Collares con imagen', desc: 'Cerca de su corazón, siempre', slug: CATEGORY_SLUGS.MASCOTAS },
               ].map((cat) => (
                 <Link
@@ -243,13 +241,13 @@ export default async function HomePage() {
                   href={`/categorias/${cat.slug}`}
                   className="group flex flex-col gap-3"
                 >
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-[#F5EFE6]" />
+                  <div className="relative aspect-square overflow-hidden rounded-xl bg-sf-cream-deep" />
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-[#111111] leading-tight">{cat.name}</p>
-                      <p className="text-xs text-[#6B6258] mt-0.5">{cat.desc}</p>
+                      <p className="text-sm font-semibold text-sf-ink leading-tight">{cat.name}</p>
+                      <p className="text-xs text-sf-warm mt-0.5">{cat.desc}</p>
                     </div>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#E7DCCF] text-[#6B6258] text-sm transition-colors group-hover:border-[#B68A57] group-hover:text-[#B68A57]" aria-hidden="true">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sf-sand text-sf-warm text-sm transition-colors group-hover:border-sf-gold group-hover:text-sf-gold" aria-hidden="true">
                       →
                     </span>
                   </div>
@@ -265,26 +263,25 @@ export default async function HomePage() {
       ═══════════════════════════════════════════════════════════════ */}
       <section id="asi-de-simple" className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-heading text-2xl font-semibold text-center text-[#111111] mb-12 sm:text-3xl">
+          <h2 className="font-heading text-2xl font-semibold text-center text-sf-ink mb-12 sm:text-3xl">
             Así de simple
           </h2>
 
           <div className="relative">
             <div
-              className="absolute left-0 right-0 top-10 hidden border-t-2 border-dashed border-[#E7DCCF] lg:block"
-              style={{ left: '12.5%', right: '12.5%' }}
+              className="absolute top-10 hidden border-t-2 border-dashed border-sf-sand lg:block lg:left-[12.5%] lg:right-[12.5%]"
               aria-hidden="true"
             />
             <div className="grid grid-cols-2 gap-8 sm:gap-6 lg:grid-cols-4">
               {PROCESS_STEPS.map((step) => (
                 <div key={step.num} className="flex flex-col items-center gap-4 text-center">
-                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-[#E7DCCF] bg-white shadow-sm">
-                    <step.icon className="h-7 w-7 text-[#B68A57]" aria-hidden="true" />
+                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-sf-sand bg-white shadow-sm">
+                    <step.icon className="h-7 w-7 text-sf-gold" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#B68A57] mb-1">{step.num}</p>
-                    <p className="text-sm font-semibold text-[#111111] mb-1">{step.title}</p>
-                    <p className="text-xs text-[#6B6258] leading-relaxed">{step.desc}</p>
+                    <p className="text-xs font-bold text-sf-gold mb-1">{step.num}</p>
+                    <p className="text-sm font-semibold text-sf-ink mb-1">{step.title}</p>
+                    <p className="text-xs text-sf-warm leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -296,9 +293,9 @@ export default async function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════
           TESTIMONIALS — "Lo que dicen nuestros clientes"
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#FAF7F2] py-16 sm:py-20">
+      <section className="bg-sf-cream py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-heading text-2xl font-semibold text-center text-[#111111] mb-10 sm:text-3xl">
+          <h2 className="font-heading text-2xl font-semibold text-center text-sf-ink mb-10 sm:text-3xl">
             Lo que dicen nuestros clientes
           </h2>
 
@@ -306,17 +303,17 @@ export default async function HomePage() {
             {TESTIMONIALS.map((t) => (
               <div
                 key={t.name}
-                className="rounded-2xl border border-[#E7DCCF] bg-white p-6 flex flex-col gap-4"
+                className="rounded-2xl border border-sf-sand bg-white p-6 flex flex-col gap-4"
               >
                 <StarRating stars={t.stars} half={t.halfStar} />
-                <p className="text-sm text-[#1F1F1F] leading-relaxed flex-1">{t.text}</p>
+                <p className="text-sm text-sf-ink-soft leading-relaxed flex-1">{t.text}</p>
                 <div className="flex items-center gap-3 mt-2">
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-[#F5EFE6] shrink-0">
-                    <div className="h-full w-full bg-[#E7DCCF]" aria-hidden="true" />
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-sf-cream-deep shrink-0">
+                    <div className="h-full w-full bg-sf-sand" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#111111]">{t.name}</p>
-                    <p className="text-xs text-[#6B6258]">{t.role}</p>
+                    <p className="text-sm font-semibold text-sf-ink">{t.name}</p>
+                    <p className="text-xs text-sf-warm">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -324,12 +321,12 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-10 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-8">
-            <div className="flex items-center gap-2 text-sm text-[#6B6258]">
-              <Heart className="h-4 w-4 text-[#B68A57]" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-sm text-sf-warm">
+              <Heart className="h-4 w-4 text-sf-gold" aria-hidden="true" />
               Más de 2.500 pedidos entregados con amor
             </div>
-            <div className="flex items-center gap-2 text-sm text-[#6B6258]">
-              <Star className="h-4 w-4 fill-[#B68A57] text-[#B68A57]" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-sm text-sf-warm">
+              <Star className="h-4 w-4 fill-sf-gold text-sf-gold" aria-hidden="true" />
               4.9/5 en opiniones de clientes
             </div>
           </div>
@@ -339,7 +336,7 @@ export default async function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════
           FINAL CTA BANNER — "Creá hoy un recuerdo único"
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-[#111111]">
+      <section className="relative overflow-hidden bg-sf-ink">
         <div className="absolute inset-0" aria-hidden="true">
           <Image
             src="/referencias-ui/home-rustica-beige-blanco-negro.png"
@@ -360,10 +357,10 @@ export default async function HomePage() {
             </p>
             <div>
               <a
-                href={IG_CHAT_URL}
+                href={LINKS.igChat}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-[#111111] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-sf-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 CONTACTO
                 <span aria-hidden="true">🐾</span>

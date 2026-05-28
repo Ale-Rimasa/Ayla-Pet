@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createSupabaseMock } from '../helpers/supabase-mock'
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
+
 vi.mock('@/lib/auth', () => ({
   requireAdmin: vi.fn().mockResolvedValue({ id: 'admin-user-id' }),
 }))
