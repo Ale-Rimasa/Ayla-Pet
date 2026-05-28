@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,15 +167,11 @@ export function HeroImagesUploader({ initialImages }: Props) {
                 </Button>
 
                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-11 text-destructive hover:text-destructive"
-                      disabled={isPending}
-                    >
-                      Eliminar
-                    </Button>
+                  <AlertDialogTrigger
+                    className={buttonVariants({ variant: 'outline' }) + ' h-11 text-destructive hover:text-destructive'}
+                    disabled={isPending}
+                  >
+                    Eliminar
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
