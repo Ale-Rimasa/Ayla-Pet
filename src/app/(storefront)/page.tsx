@@ -155,7 +155,6 @@ export default async function HomePage() {
             fallbackSrc="/referencias-ui/home-rustica-beige-blanco-negro.png"
             alt="Perro con chapita grabada Pet Laser"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-sf-cream/60 to-transparent z-10" />
         </div>
       </section>
 
