@@ -320,7 +320,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-sf-ink">
         <div className="absolute inset-0" aria-hidden="true">
           <Image
-            src="/referencias-ui/home-rustica-beige-blanco-negro.png"
+            src="/mockups/cta-recuerdo-unico.svg"
             alt=""
             fill
             sizes="100vw"

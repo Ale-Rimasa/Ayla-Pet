@@ -1,0 +1,92 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Chapita personalizada Pet Laser sobre fondo artesanal</title>
+  <desc id="desc">Ilustración cálida de una mano sosteniendo una chapita grabada, con silueta de mascota y textura de madera.</desc>
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B2118"/>
+      <stop offset="0.42" stop-color="#6F4B2E"/>
+      <stop offset="1" stop-color="#B68A57"/>
+    </linearGradient>
+
+    <radialGradient id="warmLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1050 380) rotate(141.34) scale(720 520)">
+      <stop stop-color="#F5EFE6" stop-opacity="0.8"/>
+      <stop offset="0.42" stop-color="#D7B98B" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#111111" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="tagMetal" x1="622" y1="190" x2="973" y2="568" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7EB"/>
+      <stop offset="0.45" stop-color="#C9B6A0"/>
+      <stop offset="1" stop-color="#7C6C5A"/>
+    </linearGradient>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.16"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#wood)"/>
+  <rect width="1600" height="900" fill="url(#warmLight)"/>
+  <rect width="1600" height="900" fill="#111111" opacity="0.18"/>
+  <rect width="1600" height="900" filter="url(#grain)" opacity="0.32"/>
+
+  <!-- Wooden grain lines -->
+  <g opacity="0.18" stroke="#F5EFE6" stroke-width="2" stroke-linecap="round">
+    <path d="M-40 170C180 130 330 220 520 171C742 114 898 98 1120 156C1320 208 1452 160 1664 122"/>
+    <path d="M-65 275C150 250 286 323 504 282C730 240 948 222 1150 291C1340 356 1475 289 1650 260"/>
+    <path d="M-40 660C188 598 348 710 580 642C782 584 985 605 1185 667C1389 731 1480 680 1655 636"/>
+    <path d="M-50 770C190 710 370 795 598 750C832 704 1024 728 1248 792C1416 840 1512 812 1640 780"/>
+  </g>
+
+  <!-- Soft decorative arcs -->
+  <g opacity="0.26" stroke="#E7DCCF" stroke-width="1.5">
+    <circle cx="1145" cy="290" r="220"/>
+    <circle cx="1145" cy="290" r="295"/>
+    <circle cx="1145" cy="290" r="370"/>
+  </g>
+
+  <!-- Hand silhouette -->
+  <g filter="url(#softShadow)" opacity="0.92">
+    <path d="M960 720C870 676 805 640 742 610C701 590 672 552 690 517C704 490 733 488 774 510L900 578C919 589 938 566 923 550L744 356C718 328 722 290 752 274C777 260 802 270 827 296L992 467C1009 485 1038 464 1026 442L912 226C894 190 906 155 938 143C969 131 997 148 1013 184L1120 420C1129 440 1160 434 1160 412L1158 220C1157 180 1180 151 1215 151C1250 151 1273 178 1276 219L1292 487C1293 512 1328 516 1336 493L1391 333C1404 295 1432 277 1463 286C1495 295 1511 329 1501 367L1434 622C1403 740 1308 811 1190 812C1115 813 1034 756 960 720Z" fill="#B68A57"/>
+    <path d="M960 720C870 676 805 640 742 610C701 590 672 552 690 517C704 490 733 488 774 510L900 578C919 589 938 566 923 550L744 356C718 328 722 290 752 274C777 260 802 270 827 296L992 467C1009 485 1038 464 1026 442L912 226C894 190 906 155 938 143C969 131 997 148 1013 184L1120 420C1129 440 1160 434 1160 412L1158 220C1157 180 1180 151 1215 151C1250 151 1273 178 1276 219L1292 487C1293 512 1328 516 1336 493L1391 333C1404 295 1432 277 1463 286C1495 295 1511 329 1501 367L1434 622C1403 740 1308 811 1190 812C1115 813 1034 756 960 720Z" fill="#F5EFE6" opacity="0.2"/>
+  </g>
+
+  <!-- Pet tag -->
+  <g filter="url(#softShadow)">
+    <path d="M767 226C865 226 944 305 944 403C944 501 865 580 767 580C669 580 590 501 590 403C590 305 669 226 767 226Z" fill="url(#tagMetal)"/>
+    <path d="M767 226C865 226 944 305 944 403C944 501 865 580 767 580C669 580 590 501 590 403C590 305 669 226 767 226Z" stroke="#FFF7EB" stroke-width="7" opacity="0.7"/>
+    <circle cx="767" cy="281" r="23" fill="#6B6258" opacity="0.72"/>
+    <circle cx="767" cy="281" r="12" fill="#2B2118" opacity="0.65"/>
+
+    <!-- Pet silhouette engraving -->
+    <g opacity="0.72" fill="#1F1F1F">
+      <path d="M704 382C704 333 733 309 768 309C803 309 832 333 832 382C832 425 804 458 768 458C732 458 704 425 704 382Z"/>
+      <path d="M695 337C673 308 661 281 674 268C690 252 720 274 736 315L695 337Z"/>
+      <path d="M841 337C863 308 875 281 862 268C846 252 816 274 800 315L841 337Z"/>
+      <circle cx="744" cy="380" r="8" fill="#F5EFE6" opacity="0.75"/>
+      <circle cx="792" cy="380" r="8" fill="#F5EFE6" opacity="0.75"/>
+      <path d="M755 414C763 421 773 421 781 414" stroke="#F5EFE6" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.65"/>
+    </g>
+
+    <path d="M676 500C710 523 824 523 858 500" stroke="#1F1F1F" stroke-width="8" stroke-linecap="round" opacity="0.48"/>
+    <text x="767" y="535" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#1F1F1F" opacity="0.7">Milo</text>
+  </g>
+
+  <!-- Left-side readability scrim for CTA copy -->
+  <rect width="960" height="900" fill="url(#leftScrim)"/>
+  <defs>
+    <linearGradient id="leftScrim" x1="0" y1="450" x2="970" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111111" stop-opacity="0.82"/>
+      <stop offset="0.55" stop-color="#111111" stop-opacity="0.48"/>
+      <stop offset="1" stop-color="#111111" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
