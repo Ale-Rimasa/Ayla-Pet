@@ -12,18 +12,44 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatPrice } from '@/lib/utils'
 import type { AndreaniDomicilioQuote } from '@/types/shipping'
+import type { CorreoArgentinoQuote } from '@/lib/correo-argentino'
+
+const PROVINCIAS = [
+  { label: 'Buenos Aires Prov.', value: 'AR-B' },
+  { label: 'CABA',               value: 'AR-C' },
+  { label: 'Catamarca',          value: 'AR-K' },
+  { label: 'Chaco',              value: 'AR-H' },
+  { label: 'Chubut',             value: 'AR-U' },
+  { label: 'Córdoba',            value: 'AR-X' },
+  { label: 'Corrientes',         value: 'AR-W' },
+  { label: 'Entre Ríos',         value: 'AR-E' },
+  { label: 'Formosa',            value: 'AR-P' },
+  { label: 'Jujuy',              value: 'AR-Y' },
+  { label: 'La Pampa',           value: 'AR-L' },
+  { label: 'La Rioja',           value: 'AR-F' },
+  { label: 'Mendoza',            value: 'AR-M' },
+  { label: 'Misiones',           value: 'AR-N' },
+  { label: 'Neuquén',            value: 'AR-Q' },
+  { label: 'Río Negro',          value: 'AR-R' },
+  { label: 'Salta',              value: 'AR-A' },
+  { label: 'San Juan',           value: 'AR-J' },
+  { label: 'San Luis',           value: 'AR-D' },
+  { label: 'Santa Cruz',         value: 'AR-Z' },
+  { label: 'Santa Fe',           value: 'AR-S' },
+  { label: 'Santiago del Estero',value: 'AR-G' },
+  { label: 'Tierra del Fuego',   value: 'AR-V' },
+  { label: 'Tucumán',            value: 'AR-T' },
+]
 
 interface Props {
-  /** Items a cotizar. Para página de producto: [{ variantId, quantity: 1 }] */
   items: Array<{ variantId: string; quantity: number }>
-  /** Mostrar aclaración de estimación (true en página de producto) */
   showEstimationNote?: boolean
 }
 
 type QuoteState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; quote: AndreaniDomicilioQuote; cp: string }
+  | { status: 'success'; andreani: AndreaniDomicilioQuote; correoArgentino?: CorreoArgentinoQuote; cp: string }
   | { status: 'unresolvable'; reason: string }
   | { status: 'error' }
 
@@ -31,13 +57,16 @@ const CP_REGEX = /^\d{4,8}$/
 
 export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Props) {
   const [cp, setCp] = useState('')
+  const [provincia, setProvincia] = useState('')
   const [quoteState, setQuoteState] = useState<QuoteState>({ status: 'idle' })
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const cpValid = CP_REGEX.test(cp)
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
-    if (!CP_REGEX.test(cp)) {
+    if (!cpValid) {
       setQuoteState({ status: 'idle' })
       return
     }
@@ -46,14 +75,18 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
       setQuoteState({ status: 'loading' })
 
       try {
+        const body: Record<string, unknown> = { cp, items }
+        if (provincia) body.provincia = provincia
+
         const res = await fetch('/api/shipping/quote', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cp, items }),
+          body: JSON.stringify(body),
         })
 
         const data = (await res.json()) as {
-          quote?: AndreaniDomicilioQuote
+          andreani?: AndreaniDomicilioQuote
+          correoArgentino?: CorreoArgentinoQuote
           error?: string
           reason?: string
         }
@@ -63,12 +96,17 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
           return
         }
 
-        if (!res.ok || !data.quote) {
+        if (!res.ok || !data.andreani) {
           setQuoteState({ status: 'error' })
           return
         }
 
-        setQuoteState({ status: 'success', quote: data.quote, cp })
+        setQuoteState({
+          status: 'success',
+          andreani: data.andreani,
+          correoArgentino: data.correoArgentino,
+          cp,
+        })
       } catch {
         setQuoteState({ status: 'error' })
       }
@@ -77,7 +115,7 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [cp, items])
+  }, [cp, provincia, items, cpValid])
 
   function unresolvableMessage(reason: string): string {
     if (reason === 'missing_profiles') {
@@ -100,18 +138,39 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
         </AccordionTrigger>
 
         <AccordionContent className="pb-4 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="quote-cp" className="text-sm">
-              Código postal de destino
-            </Label>
-            <Input
-              id="quote-cp"
-              placeholder="ej: 1414"
-              value={cp}
-              onChange={(e) => setCp(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              className="max-w-[180px]"
-              maxLength={8}
-            />
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="quote-cp" className="text-sm">
+                Código postal
+              </Label>
+              <Input
+                id="quote-cp"
+                placeholder="ej: 1414"
+                value={cp}
+                onChange={(e) => setCp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                className="w-[130px]"
+                maxLength={8}
+              />
+            </div>
+
+            {cpValid && (
+              <div className="space-y-1.5">
+                <Label htmlFor="quote-provincia" className="text-sm">
+                  Provincia
+                </Label>
+                <select
+                  id="quote-provincia"
+                  value={provincia}
+                  onChange={(e) => setProvincia(e.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-[180px]"
+                >
+                  <option value="">Seleccioná...</option>
+                  {PROVINCIAS.map((p) => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {quoteState.status === 'loading' && (
@@ -136,13 +195,38 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
 
           {quoteState.status === 'success' && (
             <div className="space-y-2">
+              {/* Andreani */}
               <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
                 <div>
-                  <p className="font-medium">Andreani Estándar — a domicilio</p>
-                  <p className="text-xs text-muted-foreground">{quoteState.quote.estimatedDays}</p>
+                  <p className="font-medium">Andreani — a domicilio</p>
+                  <p className="text-xs text-muted-foreground">{quoteState.andreani.estimatedDays}</p>
                 </div>
-                <span className="font-semibold">{formatPrice(quoteState.quote.price)}</span>
+                <span className="font-semibold">{formatPrice(quoteState.andreani.price)}</span>
               </div>
+
+              {/* Correo Argentino */}
+              {quoteState.correoArgentino && (
+                <>
+                  <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                    <div>
+                      <p className="font-medium">Correo Argentino — a domicilio</p>
+                      <p className="text-xs text-muted-foreground">Entrega estimada según destino</p>
+                    </div>
+                    <span className="font-semibold">
+                      {formatPrice(quoteState.correoArgentino.aDomicilioCentavos)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                    <div>
+                      <p className="font-medium">Correo Argentino — a sucursal</p>
+                      <p className="text-xs text-muted-foreground">Retirás en sucursal más cercana</p>
+                    </div>
+                    <span className="font-semibold">
+                      {formatPrice(quoteState.correoArgentino.aSucursalCentavos)}
+                    </span>
+                  </div>
+                </>
+              )}
 
               {showEstimationNote && (
                 <p className="text-xs text-muted-foreground">
@@ -154,7 +238,7 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
 
           {quoteState.status === 'idle' && (
             <p className="text-xs text-muted-foreground">
-              Ingresá tu código postal para ver el costo de envío a domicilio.
+              Ingresá tu código postal para ver el costo de envío.
             </p>
           )}
         </AccordionContent>
