@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveShippingPackages } from '@/lib/shipping-package'
 import { getShippingQuote, buildCacheKey } from '@/lib/andreani'
+import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 // CP argentino: 4–8 dígitos
@@ -13,6 +14,7 @@ const MAX_PACKAGES = 50
 
 const bodySchema = z.object({
   cp: z.string().regex(CP_REGEX, 'Código postal inválido (4–8 dígitos)'),
+  provincia: z.string().regex(/^AR-[A-Z]+$/, 'Provincia inválida (formato: AR-X)').optional(),
   items: z
     .array(
       z.object({
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { cp, items } = parsed.data
+  const { cp, provincia, items } = parsed.data
   // Nota: weight, height, width, length del cliente nunca llegan aquí —
   // el schema strict los ignora y los datos reales vienen de DB.
 
@@ -90,14 +92,22 @@ export async function POST(request: NextRequest) {
   try {
     // Next.js fetch cache con TTL de 5 minutos para producto/checkout.
     // bypassCache lo usa internamente getShippingQuote cuando se llama desde orders.
-    const quote = await getShippingQuote({
+    const andreani = await getShippingQuote({
       destinationCp: cp,
       packages: packageData,
       declaredValueCentavos,
     })
 
+    const correoArgentino = provincia
+      ? await getCorreoArgentinoQuote({
+          destinationCp: cp,
+          destinationProvincia: provincia,
+          packages: packageData,
+        })
+      : undefined
+
     return NextResponse.json(
-      { quote, cacheKey },
+      { andreani, ...(correoArgentino ? { correoArgentino } : {}), cacheKey },
       {
         headers: {
           'Cache-Control': 'private, max-age=300',
