@@ -1,10 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  ShoppingCart,
-  ImageIcon,
-  Coffee,
-  Gift,
   Star,
   Heart,
 } from 'lucide-react'
@@ -20,7 +16,6 @@ export const revalidate = 300
 
 const PROCESS_STEPS = [
   {
-    icon: ShoppingCart,
     num: '1',
     title: 'Elegí tu producto',
     desc: 'Seleccioná el accesorio que más te guste.',
@@ -28,7 +23,6 @@ const PROCESS_STEPS = [
     imageAlt: 'Ejemplo de chapita grabada a laser',
   },
   {
-    icon: ImageIcon,
     num: '2',
     title: 'Subí datos o imagen',
     desc: 'Agregá el nombre, teléfono o la foto de tu mascota.',
@@ -36,7 +30,6 @@ const PROCESS_STEPS = [
     imageAlt: 'Ejemplo de imagen o datos para grabar',
   },
   {
-    icon: Coffee,
     num: '3',
     title: 'Lo grabamos para vos',
     desc: 'Grabado láser de alta precisión con máxima calidad.',
@@ -44,7 +37,6 @@ const PROCESS_STEPS = [
     imageAlt: 'Proceso de grabado laser',
   },
   {
-    icon: Gift,
     num: '4',
     title: 'Lo recibís en casa',
     desc: 'Hecho con amor y enviado con mucho cuidado.',
@@ -53,56 +45,15 @@ const PROCESS_STEPS = [
   },
 ]
 
-const TESTIMONIALS = [
+const TESTIMONIAL_SCREENSHOTS = [
   {
-    stars: 5,
-    text: '"Hermoso trabajo, superó mis expectativas. La chapita de mi perra quedó divina y llegó rapidísimo. ¡Gracias!"',
-    name: 'Martina R.',
-    role: 'Mamá de Mía',
-    halfStar: false,
+    src: '/examples/testimonial-1.jpg',
+    alt: 'Recomendación de cliente por WhatsApp',
   },
-  {
-    stars: 5,
-    text: '"El retrato de mi gata es idéntico. Se nota el amor y la dedicación en cada detalle. 100% recomendable."',
-    name: 'Lucía M.',
-    role: 'Mamá de Nala',
-    halfStar: false,
-  },
-  {
-    stars: 4,
-    text: '"Compré el llavero para regalar y fue un éxito. La calidad es increíble."',
-    name: 'Diego S.',
-    role: 'Papá de Kira',
-    halfStar: true,
-  },
+  // Agregar más capturas acá
+  // { src: '/examples/testimonial-2.jpg', alt: '...' },
+  // { src: '/examples/testimonial-3.jpg', alt: '...' },
 ]
-
-// ─── Components ───────────────────────────────────────────────────────────────
-
-interface StarRatingProps {
-  stars: number
-  half?: boolean
-}
-
-function StarRating({ stars, half = false }: StarRatingProps) {
-  return (
-    <div className="flex items-center gap-0.5" aria-label={`${stars} estrellas`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={`h-3.5 w-3.5 ${
-            i < stars
-              ? 'fill-sf-gold text-sf-gold'
-              : half && i === stars
-                ? 'fill-sf-gold/50 text-sf-gold/50'
-                : 'fill-sf-sand text-sf-sand'
-          }`}
-          aria-hidden="true"
-        />
-      ))}
-    </div>
-  )
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -264,18 +215,14 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-8 sm:gap-6 lg:grid-cols-4">
               {PROCESS_STEPS.map((step) => (
                 <div key={step.num} className="flex flex-col items-center gap-4 text-center">
-                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-sf-sand bg-white shadow-sm overflow-hidden">
-                    {'image' in step ? (
-                      <Image
-                        src={step.image}
-                        alt={step.imageAlt}
-                        fill
-                        sizes="80px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <step.icon className="h-7 w-7 text-sf-gold" aria-hidden="true" />
-                    )}
+                  <div className="relative z-10 h-20 w-20 rounded-full border-2 border-sf-sand bg-white shadow-sm overflow-hidden">
+                    <Image
+                      src={step.image}
+                      alt={step.imageAlt}
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-sf-gold mb-1">{step.num}</p>
@@ -298,23 +245,19 @@ export default async function HomePage() {
             Lo que dicen nuestros clientes
           </h2>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
+          <div className="flex flex-wrap justify-center gap-6">
+            {TESTIMONIAL_SCREENSHOTS.map((t) => (
               <div
-                key={t.name}
-                className="rounded-2xl border border-sf-sand bg-white p-6 flex flex-col gap-4"
+                key={t.src}
+                className="relative w-64 rounded-2xl overflow-hidden border border-sf-sand shadow-sm shrink-0"
               >
-                <StarRating stars={t.stars} half={t.halfStar} />
-                <p className="text-sm text-sf-ink-soft leading-relaxed flex-1">{t.text}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-sf-cream-deep shrink-0">
-                    <div className="h-full w-full bg-sf-sand" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-sf-ink">{t.name}</p>
-                    <p className="text-xs text-sf-warm">{t.role}</p>
-                  </div>
-                </div>
+                <Image
+                  src={t.src}
+                  alt={t.alt}
+                  width={256}
+                  height={360}
+                  className="object-cover w-full h-auto"
+                />
               </div>
             ))}
           </div>
