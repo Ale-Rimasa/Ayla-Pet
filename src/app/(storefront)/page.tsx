@@ -24,24 +24,32 @@ const PROCESS_STEPS = [
     num: '1',
     title: 'Elegí tu producto',
     desc: 'Seleccioná el accesorio que más te guste.',
+    image: '/examples/chapita.png',
+    imageAlt: 'Ejemplo de chapita grabada a laser',
   },
   {
     icon: ImageIcon,
     num: '2',
     title: 'Subí datos o imagen',
     desc: 'Agregá el nombre, teléfono o la foto de tu mascota.',
+    image: '/examples/step-2.jpeg',
+    imageAlt: 'Ejemplo de imagen o datos para grabar',
   },
   {
     icon: Coffee,
     num: '3',
     title: 'Lo grabamos para vos',
     desc: 'Grabado láser de alta precisión con máxima calidad.',
+    image: '/examples/step-3.jpeg',
+    imageAlt: 'Proceso de grabado laser',
   },
   {
     icon: Gift,
     num: '4',
     title: 'Lo recibís en casa',
     desc: 'Hecho con amor y enviado con mucho cuidado.',
+    image: '/examples/step-4.jpeg',
+    imageAlt: 'Producto terminado listo para enviar',
   },
 ]
 
@@ -256,8 +264,18 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-8 sm:gap-6 lg:grid-cols-4">
               {PROCESS_STEPS.map((step) => (
                 <div key={step.num} className="flex flex-col items-center gap-4 text-center">
-                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-sf-sand bg-white shadow-sm">
-                    <step.icon className="h-7 w-7 text-sf-gold" aria-hidden="true" />
+                  <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-sf-sand bg-white shadow-sm overflow-hidden">
+                    {'image' in step ? (
+                      <Image
+                        src={step.image}
+                        alt={step.imageAlt}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <step.icon className="h-7 w-7 text-sf-gold" aria-hidden="true" />
+                    )}
                   </div>
                   <div>
                     <p className="text-xs font-bold text-sf-gold mb-1">{step.num}</p>
