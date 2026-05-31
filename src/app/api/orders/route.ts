@@ -9,33 +9,9 @@ import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { SHIPPING_METHODS } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
 
-// ─── Protección: no permitir checkout real con precios simulados ──────────────
-//
-// En ANDREANI_MODE=mock, el checkout queda deshabilitado en entornos públicos
-// a menos que SHIPPING_CHECKOUT_ENABLED=true esté explícitamente seteado.
-// En desarrollo local este check no aplica.
-
-function checkCheckoutEnabled(): NextResponse | null {
-  const mode = process.env.ANDREANI_MODE
-  const enabled = process.env.SHIPPING_CHECKOUT_ENABLED
-
-  if (
-    mode === 'mock' &&
-    process.env.NODE_ENV === 'production' &&
-    enabled !== 'true'
-  ) {
-    return NextResponse.json(
-      {
-        error: 'checkout_disabled',
-        message:
-          'El checkout está temporalmente deshabilitado. ' +
-          'La integración de envíos está pendiente de configuración.',
-      },
-      { status: 503 }
-    )
-  }
-
-  return null
+function isAndreaniEnabled(): boolean {
+  if (process.env.NODE_ENV !== 'production') return true
+  return process.env.ANDREANI_ENABLED === 'true'
 }
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -76,11 +52,7 @@ type VariantWithProduct = {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  // 1. Protección checkout en producción con mock
-  const checkoutGuard = checkCheckoutEnabled()
-  if (checkoutGuard) return checkoutGuard
-
-  // 2. Rate limiting
+  // 1. Rate limiting
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (!await checkRateLimit(`orders:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
@@ -171,6 +143,10 @@ export async function POST(request: NextRequest) {
     widthMm: p.widthMm,
     lengthMm: p.lengthMm,
   }))
+
+  if (shippingMethod === 'andreani-domicilio' && !isAndreaniEnabled()) {
+    return NextResponse.json({ error: 'andreani_not_available' }, { status: 400 })
+  }
 
   let validatedShippingCost: number
   try {

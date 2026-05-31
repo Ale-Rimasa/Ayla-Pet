@@ -87,16 +87,17 @@ export async function POST(request: NextRequest) {
     lengthMm: p.lengthMm,
   }))
 
-  const cacheKey = buildCacheKey({ destinationCp: cp, packages: packageData, declaredValueCentavos })
+  const andreaniEnabled =
+    process.env.NODE_ENV !== 'production' || process.env.ANDREANI_ENABLED === 'true'
+
+  const cacheKey = andreaniEnabled
+    ? buildCacheKey({ destinationCp: cp, packages: packageData, declaredValueCentavos })
+    : undefined
 
   try {
-    // Next.js fetch cache con TTL de 5 minutos para producto/checkout.
-    // bypassCache lo usa internamente getShippingQuote cuando se llama desde orders.
-    const andreani = await getShippingQuote({
-      destinationCp: cp,
-      packages: packageData,
-      declaredValueCentavos,
-    })
+    const andreani = andreaniEnabled
+      ? await getShippingQuote({ destinationCp: cp, packages: packageData, declaredValueCentavos })
+      : undefined
 
     const correoArgentino = provincia
       ? await getCorreoArgentinoQuote({
@@ -106,13 +107,20 @@ export async function POST(request: NextRequest) {
         })
       : undefined
 
+    if (!andreani && !correoArgentino) {
+      return NextResponse.json(
+        { error: 'No hay opciones de envío disponibles para este código postal' },
+        { status: 422 }
+      )
+    }
+
     return NextResponse.json(
-      { andreani, ...(correoArgentino ? { correoArgentino } : {}), cacheKey },
       {
-        headers: {
-          'Cache-Control': 'private, max-age=300',
-        },
-      }
+        ...(andreani ? { andreani } : {}),
+        ...(correoArgentino ? { correoArgentino } : {}),
+        ...(cacheKey ? { cacheKey } : {}),
+      },
+      { headers: { 'Cache-Control': 'private, max-age=300' } }
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'

@@ -59,7 +59,7 @@ function stepToNumber(step: 'shipping' | 'review' | 'payment'): 1 | 2 {
 type QuoteState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; andreani: AndreaniDomicilioQuote; correoArgentino?: CorreoArgentinoQuote }
+  | { status: 'success'; andreani?: AndreaniDomicilioQuote; correoArgentino?: CorreoArgentinoQuote }
   | { status: 'unresolvable'; reason: string }
   | { status: 'error' }
 
@@ -159,15 +159,20 @@ export function CheckoutForm() {
           return
         }
 
-        if (!res.ok || !data.andreani) {
+        if (!res.ok || (!data.andreani && !data.correoArgentino)) {
           setQuoteState({ status: 'error' })
           return
         }
 
         setQuoteState({ status: 'success', andreani: data.andreani, correoArgentino: data.correoArgentino })
-        // Auto-seleccionar Andreani por defecto
-        setValue('shippingMethod', 'andreani-domicilio')
-        setValue('clientShippingCost', data.andreani.price)
+        // Auto-seleccionar: Andreani si está disponible, si no el primero de Correo
+        if (data.andreani) {
+          setValue('shippingMethod', 'andreani-domicilio')
+          setValue('clientShippingCost', data.andreani.price)
+        } else if (data.correoArgentino) {
+          setValue('shippingMethod', 'correo-argentino-domicilio')
+          setValue('clientShippingCost', data.correoArgentino.aDomicilioCentavos)
+        }
       } catch {
         setQuoteState({ status: 'error' })
       }
@@ -408,6 +413,7 @@ export function CheckoutForm() {
                 {quoteState.status === 'success' && (
                   <div className="space-y-3">
                     {/* Andreani domicilio */}
+                    {quoteState.andreani && (
                     <label
                       className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors ${
                         shippingMethod === 'andreani-domicilio'
@@ -423,7 +429,7 @@ export function CheckoutForm() {
                           checked={shippingMethod === 'andreani-domicilio'}
                           onChange={() => {
                             setValue('shippingMethod', 'andreani-domicilio')
-                            setValue('clientShippingCost', quoteState.andreani.price)
+                            setValue('clientShippingCost', quoteState.andreani!.price)
                           }}
                         />
                         <div>
@@ -433,6 +439,7 @@ export function CheckoutForm() {
                       </div>
                       <span className="font-semibold text-sm">{formatPrice(quoteState.andreani.price)}</span>
                     </label>
+                    )}
 
                     {/* Correo Argentino domicilio */}
                     {quoteState.correoArgentino && (
