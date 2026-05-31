@@ -39,10 +39,15 @@ export async function createPreference(
       },
     })
 
+    const isTest = env.MP_ACCESS_TOKEN?.startsWith('TEST-')
+    const initPoint = isTest
+      ? (response.sandbox_init_point ?? response.init_point!)
+      : response.init_point!
+
     return {
       ok: true,
       data: {
-        initPoint: response.init_point!,
+        initPoint,
         preferenceId: response.id!,
       },
     }

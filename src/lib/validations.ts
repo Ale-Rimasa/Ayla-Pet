@@ -109,6 +109,7 @@ export const CheckoutSchema = z.object({
     message: 'Seleccioná un método de envío',
   }),
   observations: z.string().max(80, 'Máximo 80 caracteres').optional(),
+  paymentMethod: z.enum(['mercadopago', 'transfer']),
   // Precio visto por el cliente — opcional, solo para detectar cambio de precio en UX.
   // El servidor SIEMPRE calcula el costo definitivo.
   clientShippingCost: z.number().int().min(0).optional(),

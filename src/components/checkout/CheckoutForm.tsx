@@ -105,6 +105,7 @@ export function CheckoutForm() {
       customer: storedCustomer ?? undefined,
       shippingAddress: storedShipping ?? undefined,
       shippingMethod: 'andreani-domicilio',
+      paymentMethod: 'mercadopago',
       clientShippingCost: undefined,
     },
   })
@@ -113,6 +114,7 @@ export function CheckoutForm() {
   const province = watch('shippingAddress.province')
   const shippingMethod = watch('shippingMethod')
   const observations = watch('observations')
+  const paymentMethod = watch('paymentMethod')
   const clientShippingCost = watch('clientShippingCost')
   const subtotal = totalPrice()
   const displayShippingCost = clientShippingCost ?? 0
@@ -231,6 +233,22 @@ export function CheckoutForm() {
         throw new Error(body?.error ?? 'Error al crear el pedido')
       }
 
+      const selectedPayment = getValues('paymentMethod')
+
+      if (selectedPayment === 'mercadopago') {
+        const prefRes = await fetch('/api/payments/preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: body.orderId }),
+        })
+        const prefBody = await prefRes.json().catch(() => ({})) as { initPoint?: string; error?: string }
+        if (!prefRes.ok || !prefBody.initPoint) {
+          throw new Error(prefBody.error ?? 'Error al iniciar el pago')
+        }
+        window.location.href = prefBody.initPoint
+        return
+      }
+
       router.push(`/checkout/confirmacion?orderId=${body.orderId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
@@ -286,6 +304,7 @@ export function CheckoutForm() {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <input type="hidden" {...register('shippingMethod')} />
+          <input type="hidden" {...register('paymentMethod')} />
           <input type="hidden" {...register('clientShippingCost', { valueAsNumber: true })} />
 
           {currentStep === 1 && (
@@ -556,6 +575,49 @@ export function CheckoutForm() {
                   <p className="text-xs text-muted-foreground">
                     El total definitivo se confirma al procesar el pedido.
                   </p>
+                </div>
+              </section>
+
+              {/* ── Método de pago ── */}
+              <section aria-labelledby="payment-heading">
+                <h2 id="payment-heading" className="mb-4 text-lg font-semibold">Método de pago</h2>
+                <div className="space-y-3">
+                  <label
+                    className={`flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-colors ${
+                      paymentMethod === 'mercadopago'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      className="accent-primary"
+                      checked={paymentMethod === 'mercadopago'}
+                      onChange={() => setValue('paymentMethod', 'mercadopago')}
+                    />
+                    <div>
+                      <p className="font-medium text-sm">MercadoPago</p>
+                      <p className="text-xs text-muted-foreground">Tarjeta de crédito, débito o saldo MP</p>
+                    </div>
+                  </label>
+                  <label
+                    className={`flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-colors ${
+                      paymentMethod === 'transfer'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      className="accent-primary"
+                      checked={paymentMethod === 'transfer'}
+                      onChange={() => setValue('paymentMethod', 'transfer')}
+                    />
+                    <div>
+                      <p className="font-medium text-sm">Transferencia bancaria</p>
+                      <p className="text-xs text-muted-foreground">Te enviamos los datos por email</p>
+                    </div>
+                  </label>
                 </div>
               </section>
 
