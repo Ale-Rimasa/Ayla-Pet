@@ -43,3 +43,36 @@ export const HERO_DEFAULTS = {
 export const LINKS = {
   igChat: 'https://ig.me/m/aylapets_',
 } as const
+
+export const AR_PROVINCES: Record<string, string> = {
+  'Buenos Aires':          'AR-B',
+  'Ciudad de Buenos Aires': 'AR-C',
+  'Catamarca':             'AR-K',
+  'Chaco':                 'AR-H',
+  'Chubut':                'AR-U',
+  'Córdoba':               'AR-X',
+  'Corrientes':            'AR-W',
+  'Entre Ríos':            'AR-E',
+  'Formosa':               'AR-P',
+  'Jujuy':                 'AR-Y',
+  'La Pampa':              'AR-L',
+  'La Rioja':              'AR-F',
+  'Mendoza':               'AR-M',
+  'Misiones':              'AR-N',
+  'Neuquén':               'AR-Q',
+  'Río Negro':             'AR-R',
+  'Salta':                 'AR-A',
+  'San Juan':              'AR-J',
+  'San Luis':              'AR-D',
+  'Santa Cruz':            'AR-Z',
+  'Santa Fe':              'AR-S',
+  'Santiago del Estero':   'AR-G',
+  'Tierra del Fuego':      'AR-V',
+  'Tucumán':               'AR-T',
+}
+
+export const AR_PROVINCE_CODES = Object.values(AR_PROVINCES) as [string, ...string[]]
+
+export const AR_PROVINCES_LIST = Object.entries(AR_PROVINCES).map(
+  ([name, code]) => ({ name, code })
+)

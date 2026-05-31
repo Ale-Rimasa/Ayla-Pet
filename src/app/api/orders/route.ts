@@ -5,6 +5,7 @@ import { createOrder } from '@/lib/db/orders'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { resolveShippingPackages, packagesToSnapshots } from '@/lib/shipping-package'
 import { getShippingQuote, AndreaniUnavailableError } from '@/lib/andreani'
+import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { SHIPPING_METHODS } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
 
@@ -62,6 +63,7 @@ const bodySchema = z.object({
   // El servidor SIEMPRE calcula el costo definitivo — este valor nunca determina el total.
   clientShippingCost: z.number().int().min(0).optional(),
   notes: z.string().optional(),
+  observations: z.string().max(80).optional(),
 })
 
 type VariantWithProduct = {
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { customer, shipping, items, shippingMethod, clientShippingCost, notes } = parsed.data
+  const { customer, shipping, items, shippingMethod, clientShippingCost, notes, observations } = parsed.data
 
   // 4. Leer precios de variantes desde DB (nunca del cliente)
   const supabase = await createClient()
@@ -172,19 +174,30 @@ export async function POST(request: NextRequest) {
 
   let validatedShippingCost: number
   try {
-    const quote = await getShippingQuote({
-      destinationCp: shipping.postalCode,
-      packages: packageData,
-      declaredValueCentavos: subtotal,
-      bypassCache: true, // Siempre cotización fresca para crear una orden
-    })
-    validatedShippingCost = quote.price
+    if (shippingMethod === 'correo-argentino-domicilio' || shippingMethod === 'correo-argentino-sucursal') {
+      const quote = await getCorreoArgentinoQuote({
+        destinationCp: shipping.postalCode,
+        destinationProvincia: shipping.province,
+        packages: packageData,
+      })
+      validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
+        ? quote.aDomicilioCentavos
+        : quote.aSucursalCentavos
+    } else {
+      const quote = await getShippingQuote({
+        destinationCp: shipping.postalCode,
+        packages: packageData,
+        declaredValueCentavos: subtotal,
+        bypassCache: true,
+      })
+      validatedShippingCost = quote.price
+    }
   } catch (err) {
     if (err instanceof AndreaniUnavailableError) {
       return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
     }
     console.error('[POST /api/orders] getShippingQuote error', err)
-    return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
+    return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })
   }
 
   const total = subtotal + validatedShippingCost
@@ -217,7 +230,7 @@ export async function POST(request: NextRequest) {
     subtotal,
     shippingCost: validatedShippingCost,
     total,
-    notes,
+    notes: observations ?? notes,
     shippingPackages: packageSnapshots,
   })
 

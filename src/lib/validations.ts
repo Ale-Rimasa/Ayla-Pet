@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { OrderStatus } from '@/types'
 import { SHIPPING_METHODS } from '@/types/shipping'
+import { AR_PROVINCE_CODES } from '@/lib/constants'
 
 const slugRegex = /^[a-z0-9-]+$/
 
@@ -99,12 +100,15 @@ export const CheckoutSchema = z.object({
   shippingAddress: z.object({
     street: z.string().min(3, 'Ingresá la dirección'),
     city: z.string().min(2, 'Ingresá la ciudad'),
-    province: z.string().min(2, 'Ingresá la provincia'),
+    province: z.enum(AR_PROVINCE_CODES as [string, ...string[]], {
+      message: 'Seleccioná una provincia',
+    }),
     postalCode: z.string().min(4, 'Ingresá el código postal'),
   }),
   shippingMethod: z.enum(SHIPPING_METHODS, {
     message: 'Seleccioná un método de envío',
   }),
+  observations: z.string().max(80, 'Máximo 80 caracteres').optional(),
   // Precio visto por el cliente — opcional, solo para detectar cambio de precio en UX.
   // El servidor SIEMPRE calcula el costo definitivo.
   clientShippingCost: z.number().int().min(0).optional(),

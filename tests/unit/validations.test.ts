@@ -11,7 +11,7 @@ const validData = {
   shippingAddress: {
     street: 'Av. Corrientes 1234',
     city: 'CABA',
-    province: 'Buenos Aires',
+    province: 'AR-B',
     postalCode: '1043',
   },
   shippingMethod: 'andreani-domicilio' as const,

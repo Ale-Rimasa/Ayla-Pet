@@ -1,7 +1,11 @@
 // ── Métodos de envío válidos ──────────────────────────────────────────────────
 // pickup removido del scope hasta confirmar retiro presencial.
 
-export const SHIPPING_METHODS = ['andreani-domicilio'] as const
+export const SHIPPING_METHODS = [
+  'andreani-domicilio',
+  'correo-argentino-domicilio',
+  'correo-argentino-sucursal',
+] as const
 export type ShippingMethod = (typeof SHIPPING_METHODS)[number]
 
 // ── Perfiles de paquete ───────────────────────────────────────────────────────
