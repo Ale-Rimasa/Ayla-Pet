@@ -49,7 +49,7 @@ interface Props {
 type QuoteState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; andreani: AndreaniDomicilioQuote; correoArgentino?: CorreoArgentinoQuote; cp: string }
+  | { status: 'success'; andreani?: AndreaniDomicilioQuote; correoArgentino?: CorreoArgentinoQuote; cp: string }
   | { status: 'unresolvable'; reason: string }
   | { status: 'error' }
 
@@ -96,7 +96,7 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
           return
         }
 
-        if (!res.ok || !data.andreani) {
+        if (!res.ok || (!data.andreani && !data.correoArgentino)) {
           setQuoteState({ status: 'error' })
           return
         }
@@ -196,6 +196,7 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
           {quoteState.status === 'success' && (
             <div className="space-y-2">
               {/* Andreani */}
+              {quoteState.andreani && (
               <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
                 <div>
                   <p className="font-medium">Andreani — a domicilio</p>
@@ -203,6 +204,7 @@ export function ShippingQuoteAccordion({ items, showEstimationNote = false }: Pr
                 </div>
                 <span className="font-semibold">{formatPrice(quoteState.andreani.price)}</span>
               </div>
+              )}
 
               {/* Correo Argentino */}
               {quoteState.correoArgentino && (
