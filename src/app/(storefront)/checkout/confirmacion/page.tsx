@@ -11,16 +11,28 @@ export const metadata: Metadata = {
 }
 
 interface Props {
-  searchParams: Promise<{ orderId?: string }>
+  searchParams: Promise<{
+    // Transfer manual
+    orderId?: string
+    // MercadoPago back_url params
+    external_reference?: string
+    status?: string
+    payment_id?: string
+  }>
 }
 
 export default async function ConfirmacionPage({ searchParams }: Props) {
-  const { orderId } = await searchParams
+  const params = await searchParams
 
+  // Transfer uses ?orderId=, MP uses ?external_reference=
+  const orderId = params.orderId ?? params.external_reference
   if (!orderId) redirect('/')
 
   const order = await getOrderById(orderId)
   if (!order) redirect('/')
 
-  return <ConfirmacionClient order={order} />
+  // null = transfer manual; 'approved' | 'pending' | 'in_process' = MP
+  const mpStatus = params.status ?? null
+
+  return <ConfirmacionClient order={order} mpStatus={mpStatus} />
 }

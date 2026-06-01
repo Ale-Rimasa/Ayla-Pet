@@ -38,7 +38,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('CTA "Subir mis fotos" is present and points to /mi-pedido/<id>/fotos', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
 
     const ctaLink = screen.getByRole('link', { name: /subir mis fotos/i })
     expect(ctaLink).toBeDefined()
@@ -47,7 +47,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('shows bank transfer data (CBU and Alias rows)', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
 
     expect(screen.getByText('CBU')).toBeDefined()
     expect(screen.getByText('Alias')).toBeDefined()
@@ -55,7 +55,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('shows the order number in the page', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
 
     const shortId = PENDING_ORDER.id.slice(0, 8).toUpperCase()
     expect(screen.getAllByText(new RegExp(shortId)).length).toBeGreaterThan(0)

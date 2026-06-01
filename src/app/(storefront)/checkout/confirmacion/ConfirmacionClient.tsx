@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { CheckCircle, Copy } from 'lucide-react'
+import { CheckCircle, Clock, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
@@ -14,13 +14,14 @@ import type { Order } from '@/types'
 
 interface ConfirmacionClientProps {
   order: Order
+  /** null = transferencia manual | 'approved' | 'pending' | 'in_process' = MercadoPago */
+  mpStatus: string | null
 }
 
-export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
+export function ConfirmacionClient({ order, mpStatus }: ConfirmacionClientProps) {
   const clearCart = useCartStore((s) => s.clearCart)
   const resetCheckout = useCheckoutStore((s) => s.resetCheckout)
 
-  // Limpiamos carrito y store una sola vez al confirmar el pedido.
   // clearCart y resetCheckout son funciones estables en Zustand — safe ignorar deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { clearCart(); resetCheckout() }, [])
@@ -31,15 +32,32 @@ export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
     })
   }
 
+  const isTransfer = mpStatus === null
+  const isApproved = mpStatus === 'approved'
+  const isPending = mpStatus === 'pending' || mpStatus === 'in_process'
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="text-center">
-        <CheckCircle className="mx-auto h-16 w-16 text-secondary" aria-hidden="true" />
-        <h1 className="mt-4 font-heading text-3xl font-bold">¡Pedido recibido!</h1>
+        {isPending ? (
+          <Clock className="mx-auto h-16 w-16 text-amber-500" aria-hidden="true" />
+        ) : (
+          <CheckCircle className="mx-auto h-16 w-16 text-secondary" aria-hidden="true" />
+        )}
+
+        <h1 className="mt-4 font-heading text-3xl font-bold">
+          {isApproved && '¡Pago aprobado!'}
+          {isPending && 'Pago en proceso'}
+          {isTransfer && '¡Pedido recibido!'}
+        </h1>
+
         <p className="mt-2 text-muted-foreground">
-          Completá la transferencia y luego subí las fotos de tu mascota.
+          {isApproved && 'Tu pago fue acreditado. Ya podés subir las fotos de tu mascota.'}
+          {isPending && 'MercadoPago está procesando tu pago. Te avisaremos por email cuando se acredite.'}
+          {isTransfer && 'Completá la transferencia y luego subí las fotos de tu mascota.'}
         </p>
+
         <p className="mt-1 text-sm text-muted-foreground">
           Número de pedido:{' '}
           <span className="font-mono font-semibold text-foreground">
@@ -48,38 +66,40 @@ export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
         </p>
       </div>
 
-      {/* Datos bancarios */}
-      <div className="mt-10 rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-4 font-semibold">Datos para la transferencia</h2>
+      {/* Datos bancarios — solo para transferencia manual */}
+      {isTransfer && (
+        <div className="mt-10 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-4 font-semibold">Datos para la transferencia</h2>
 
-        <div className="space-y-3 text-sm">
-          <TransferRow label="CBU" value={TRANSFER.cbu} onCopy={copyToClipboard} />
-          <TransferRow label="Alias" value={TRANSFER.alias} onCopy={copyToClipboard} />
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Titular</span>
-            <span className="font-medium">{TRANSFER.titular}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Banco</span>
-            <span className="font-medium">{TRANSFER.banco}</span>
+          <div className="space-y-3 text-sm">
+            <TransferRow label="CBU" value={TRANSFER.cbu} onCopy={copyToClipboard} />
+            <TransferRow label="Alias" value={TRANSFER.alias} onCopy={copyToClipboard} />
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Titular</span>
+              <span className="font-medium">{TRANSFER.titular}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Banco</span>
+              <span className="font-medium">{TRANSFER.banco}</span>
+            </div>
+
+            <Separator className="my-3" />
+
+            <div className="flex justify-between text-base font-semibold">
+              <span>Total a transferir</span>
+              <span className="text-secondary">{formatPrice(order.total)}</span>
+            </div>
           </div>
 
-          <Separator className="my-3" />
-
-          <div className="flex justify-between text-base font-semibold">
-            <span>Total a transferir</span>
-            <span className="text-secondary">{formatPrice(order.total)}</span>
-          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Usá el número de pedido{' '}
+            <span className="font-mono font-medium text-foreground">
+              #{order.id.slice(0, 8).toUpperCase()}
+            </span>{' '}
+            como referencia de la transferencia.
+          </p>
         </div>
-
-        <p className="mt-4 text-xs text-muted-foreground">
-          Usá el número de pedido{' '}
-          <span className="font-mono font-medium text-foreground">
-            #{order.id.slice(0, 8).toUpperCase()}
-          </span>{' '}
-          como referencia de la transferencia.
-        </p>
-      </div>
+      )}
 
       {/* Resumen del pedido */}
       <div className="mt-6 rounded-xl border border-border bg-card p-6">
@@ -130,8 +150,11 @@ export function ConfirmacionClient({ order }: ConfirmacionClientProps) {
           Seguir comprando
         </Link>
       </div>
+
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        Podés subir las fotos ahora mismo. Confirmamos tu pago en cuanto acreditemos la transferencia.
+        {isTransfer && 'Podés subir las fotos ahora mismo. Confirmamos tu pago en cuanto acreditemos la transferencia.'}
+        {isApproved && 'Recibirás un email con los detalles de tu pedido.'}
+        {isPending && 'Podés subir las fotos ahora mismo. Te notificaremos cuando el pago sea confirmado.'}
       </p>
     </div>
   )
