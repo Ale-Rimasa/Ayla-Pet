@@ -13,7 +13,17 @@ export async function POST(request: NextRequest) {
 
   const xSignature = request.headers.get('x-signature') ?? ''
   const xRequestId = request.headers.get('x-request-id') ?? ''
-  const paymentId = new URL(request.url).searchParams.get('id') ?? ''
+
+  // Real webhooks send ?id= in the URL; the simulate tool sends it in the body as data.id
+  let paymentId = new URL(request.url).searchParams.get('id') ?? ''
+  if (!paymentId) {
+    try {
+      const body = await request.json() as { data?: { id?: unknown } }
+      paymentId = String(body?.data?.id ?? '')
+    } catch {
+      // paymentId stays empty
+    }
+  }
 
   if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET ?? '')) {
     console.error('[webhook] Signature verification failed', {
