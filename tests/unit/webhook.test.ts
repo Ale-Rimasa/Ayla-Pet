@@ -163,8 +163,9 @@ describe('POST /api/webhooks/mercadopago', () => {
     expect(mockSendOrderConfirmation).toHaveBeenCalledOnce()
   })
 
-  it('valid sig + rejected → 200, no side effects', async () => {
+  it('valid sig + rejected → 200, cancels order, no stock/email side effects', async () => {
     mockRecordMPPayment.mockResolvedValue({ ok: true })
+    mockUpdateOrderStatus.mockResolvedValue({ ok: true })
 
     mockFetchPayment.mockResolvedValue({
       ok: true,
@@ -175,8 +176,8 @@ describe('POST /api/webhooks/mercadopago', () => {
     const res = await POST(buildValidRequest() as any)
 
     expect(res.status).toBe(200)
+    expect(mockUpdateOrderStatus).toHaveBeenCalledWith('order-uuid-1', 'pending', 'cancelled')
     expect(mockDecrementStock).not.toHaveBeenCalled()
-    expect(mockUpdateOrderStatus).not.toHaveBeenCalled()
     expect(mockSendOrderConfirmation).not.toHaveBeenCalled()
   })
 

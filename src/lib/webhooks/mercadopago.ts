@@ -49,6 +49,17 @@ export async function processMPWebhook(paymentId: string): Promise<void> {
     return
   }
 
+  if (mpStatus === 'rejected') {
+    const order = await getOrderById(orderId)
+    if (order && order.status === 'pending') {
+      const cancelResult = await updateOrderStatus(orderId, order.status, 'cancelled')
+      if (!cancelResult.ok) {
+        console.error('[webhook] Failed to cancel rejected order:', { orderId, error: cancelResult.error })
+      }
+    }
+    return
+  }
+
   if (mpStatus !== 'approved') return
 
   const order = await getOrderById(orderId)
