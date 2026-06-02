@@ -21,6 +21,7 @@ vi.mock('lucide-react', () => ({
   CheckCircle: () => <svg data-testid="check-circle" />,
   Clock: () => <svg data-testid="clock-icon" />,
   Copy: () => <svg data-testid="copy-icon" />,
+  XCircle: () => <svg data-testid="x-circle-icon" />,
 }))
 
 vi.mock('sonner', () => ({
@@ -150,6 +151,34 @@ describe('ConfirmacionClient — MercadoPago pendiente (mpStatus="pending")', ()
 
   it('does NOT show bank transfer data', () => {
     render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" />)
+    expect(screen.queryByText('Datos para la transferencia')).not.toBeInTheDocument()
+  })
+})
+
+describe('ConfirmacionClient — MercadoPago rechazado (mpStatus="rejected")', () => {
+  it('renders "Pago rechazado"', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    expect(screen.getByText('Pago rechazado')).toBeInTheDocument()
+  })
+
+  it('shows XCircle icon', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    expect(screen.getByTestId('x-circle-icon')).toBeInTheDocument()
+  })
+
+  it('shows "Reintentar pago" CTA linking to /checkout', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    const link = screen.getByRole('link', { name: /reintentar pago/i })
+    expect(link.getAttribute('href')).toBe('/checkout')
+  })
+
+  it('does NOT show order summary', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    expect(screen.queryByText('Resumen del pedido')).not.toBeInTheDocument()
+  })
+
+  it('does NOT show bank transfer data', () => {
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
     expect(screen.queryByText('Datos para la transferencia')).not.toBeInTheDocument()
   })
 })

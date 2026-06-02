@@ -33,7 +33,7 @@ export async function createPreference(
         back_urls: {
           success: `${env.NEXT_PUBLIC_SITE_URL}/checkout/confirmacion`,
           pending: `${env.NEXT_PUBLIC_SITE_URL}/checkout/confirmacion`,
-          failure: `${env.NEXT_PUBLIC_SITE_URL}/checkout`,
+          failure: `${env.NEXT_PUBLIC_SITE_URL}/checkout/confirmacion`,
         },
         auto_return: 'approved',
       },
