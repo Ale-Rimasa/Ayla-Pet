@@ -41,6 +41,8 @@ export async function processMPWebhook(paymentId: string): Promise<void> {
 
   const { status: mpStatus, amount, orderId } = paymentResult.data
 
+  console.info('[webhook] Payment received', { paymentId, mpStatus, orderId })
+
   const recordResult = await recordMPPayment({ mpPaymentId: paymentId, orderId, status: mpStatus, amount })
 
   if (!recordResult.ok) {
