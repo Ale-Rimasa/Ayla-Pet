@@ -22,20 +22,21 @@ export function ConfirmacionClient({ order, mpStatus }: ConfirmacionClientProps)
   const clearCart = useCartStore((s) => s.clearCart)
   const resetCheckout = useCheckoutStore((s) => s.resetCheckout)
 
+  const isTransfer = mpStatus === null
+  const isApproved = mpStatus === 'approved'
+  const isPending = mpStatus === 'pending' || mpStatus === 'in_process'
+  const isRejected = mpStatus === 'rejected'
+
   // clearCart y resetCheckout son funciones estables en Zustand — safe ignorar deps.
+  // No limpiamos en rejected: el usuario puede reintentar con el mismo carrito.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { clearCart(); resetCheckout() }, [])
+  useEffect(() => { if (!isRejected) { clearCart(); resetCheckout() } }, [])
 
   function copyToClipboard(value: string, label: string) {
     navigator.clipboard.writeText(value).then(() => {
       toast.success(`${label} copiado`)
     })
   }
-
-  const isTransfer = mpStatus === null
-  const isApproved = mpStatus === 'approved'
-  const isPending = mpStatus === 'pending' || mpStatus === 'in_process'
-  const isRejected = mpStatus === 'rejected'
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
