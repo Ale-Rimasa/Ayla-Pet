@@ -4,9 +4,9 @@ export const REVALIDATE_CATALOG = 60
 export const REVALIDATE_PRODUCT = 30
 
 export const BRAND = {
-  name: 'Ayla Pets',
+  name: 'Ayla',
   displayLine1: 'Ayla',
-  displayLine2: 'Pets',
+  displayLine2: '',
   adminEmail: 'supportaylapet@gmail.com',
   domain: 'ptlaser.com.ar',
   instagram: 'https://www.instagram.com/aylapets_/',

@@ -217,8 +217,8 @@ export function OrderPhotosUploaderClient({ orderId, initialPhotos, canUpload }:
         <DialogContent className="max-w-sm text-center">
           <div className="flex justify-center pt-2">
             <Image
-              src="/logo.png"
-              alt="Ayla Pets"
+              src="/logo-new.png"
+              alt="Ayla"
               width={100}
               height={100}
               className="object-contain"
