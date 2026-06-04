@@ -58,7 +58,7 @@ export async function Navbar() {
               aria-label={BRAND.name}
             >
               <Image
-                src="/logo.png"
+                src="/logo-new.png"
                 alt={BRAND.name}
                 width={60}
                 height={60}
@@ -80,7 +80,7 @@ export async function Navbar() {
               aria-label={BRAND.name}
             >
               <Image
-                src="/logo.png"
+                src="/logo-new.png"
                 alt={BRAND.name}
                 width={44}
                 height={44}

@@ -66,7 +66,7 @@ export function Footer() {
             {/* Logo */}
             <Link href="/" className="inline-flex items-center gap-2">
               <Image
-                src="/logo.png"
+                src="/logo-new.png"
                 alt={BRAND.name}
                 width={44}
                 height={44}
