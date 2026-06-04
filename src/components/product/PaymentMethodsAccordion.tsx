@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, Banknote } from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -9,10 +9,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 
-/**
- * Acordeón informativo de medios de pago.
- * Contenido estático — sin cuotas ni transferencia hasta confirmar disponibilidad.
- */
 export function PaymentMethodsAccordion() {
   return (
     <Accordion multiple={false}>
@@ -37,6 +33,18 @@ export function PaymentMethodsAccordion() {
               <p className="text-sm font-medium">Mercado Pago</p>
               <p className="text-xs text-muted-foreground">
                 Pagá de forma segura con tarjeta de débito, crédito y más.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border p-3">
+            <Banknote className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Transferencia bancaria</p>
+              <p className="text-xs text-muted-foreground">
+                Alias:{' '}
+                <span className="font-mono font-medium text-foreground">ayla.pagos</span>
+                {/* TODO: reemplazar con alias real */}
               </p>
             </div>
           </div>
