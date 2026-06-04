@@ -7,11 +7,18 @@ import { resolveShippingPackages, packagesToSnapshots } from '@/lib/shipping-pac
 import { getShippingQuote, AndreaniUnavailableError } from '@/lib/andreani'
 import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { SHIPPING_METHODS } from '@/types/shipping'
+import type { ShippingPackageSnapshot } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
 
 function isAndreaniEnabled(): boolean {
   if (process.env.NODE_ENV !== 'production') return true
   return process.env.ANDREANI_ENABLED === 'true'
+}
+
+function isShippingQuoteAvailable(method: string): boolean {
+  if (method === 'andreani-domicilio') return isAndreaniEnabled()
+  const correoMode = process.env.CORREO_ARGENTINO_MODE ?? 'mock'
+  return correoMode === 'rapidapi' || correoMode === 'official'
 }
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -124,79 +131,76 @@ export async function POST(request: NextRequest) {
 
   const subtotal = orderItems.reduce((acc, item) => acc + item.subtotal, 0)
 
-  // 6. Resolver paquetes desde DB y cotizar con Andreani (server-side)
-  const resolved = await resolveShippingPackages(
-    items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))
-  )
+  // 6. Cotizar envío server-side (solo cuando el proveedor tiene credenciales)
+  let validatedShippingCost = 0
+  let packageSnapshots: ShippingPackageSnapshot[] = []
 
-  if (!resolved.ok) {
-    return NextResponse.json(
-      { error: 'unresolvable_package', reason: resolved.reason },
-      { status: 422 }
+  if (isShippingQuoteAvailable(shippingMethod)) {
+    const resolved = await resolveShippingPackages(
+      items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))
     )
-  }
 
-  // Valor declarado = subtotal calculado server-side
-  const packageData = resolved.packages.map((p) => ({
-    weightG: p.weightG,
-    heightMm: p.heightMm,
-    widthMm: p.widthMm,
-    lengthMm: p.lengthMm,
-  }))
-
-  if (shippingMethod === 'andreani-domicilio' && !isAndreaniEnabled()) {
-    return NextResponse.json({ error: 'andreani_not_available' }, { status: 400 })
-  }
-
-  let validatedShippingCost: number
-  try {
-    if (shippingMethod === 'correo-argentino-domicilio' || shippingMethod === 'correo-argentino-sucursal') {
-      const quote = await getCorreoArgentinoQuote({
-        destinationCp: shipping.postalCode,
-        destinationProvincia: shipping.province,
-        packages: packageData,
-      })
-      validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
-        ? quote.aDomicilioCentavos
-        : quote.aSucursalCentavos
-    } else {
-      const quote = await getShippingQuote({
-        destinationCp: shipping.postalCode,
-        packages: packageData,
-        declaredValueCentavos: subtotal,
-        bypassCache: true,
-      })
-      validatedShippingCost = quote.price
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { error: 'unresolvable_package', reason: resolved.reason },
+        { status: 422 }
+      )
     }
-  } catch (err) {
-    if (err instanceof AndreaniUnavailableError) {
-      return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
+
+    const packageData = resolved.packages.map((p) => ({
+      weightG: p.weightG,
+      heightMm: p.heightMm,
+      widthMm: p.widthMm,
+      lengthMm: p.lengthMm,
+    }))
+
+    try {
+      if (shippingMethod === 'correo-argentino-domicilio' || shippingMethod === 'correo-argentino-sucursal') {
+        const quote = await getCorreoArgentinoQuote({
+          destinationCp: shipping.postalCode,
+          destinationProvincia: shipping.province,
+          packages: packageData,
+        })
+        validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
+          ? quote.aDomicilioCentavos
+          : quote.aSucursalCentavos
+      } else {
+        const quote = await getShippingQuote({
+          destinationCp: shipping.postalCode,
+          packages: packageData,
+          declaredValueCentavos: subtotal,
+          bypassCache: true,
+        })
+        validatedShippingCost = quote.price
+      }
+    } catch (err) {
+      if (err instanceof AndreaniUnavailableError) {
+        return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
+      }
+      console.error('[POST /api/orders] getShippingQuote error', err)
+      return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })
     }
-    console.error('[POST /api/orders] getShippingQuote error', err)
-    return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })
+
+    packageSnapshots = packagesToSnapshots(resolved.packages)
+
+    // 7. Detectar cambio de precio
+    if (
+      clientShippingCost !== undefined &&
+      clientShippingCost !== validatedShippingCost
+    ) {
+      return NextResponse.json(
+        {
+          error: 'shipping_price_changed',
+          newShippingCost: validatedShippingCost,
+          newTotal: subtotal + validatedShippingCost,
+        },
+        { status: 409 }
+      )
+    }
   }
 
+  // 8. Crear orden
   const total = subtotal + validatedShippingCost
-
-  // 7. Detectar cambio de precio (el cliente envía su precio para comparación)
-  //    Si difieren → 409. El cliente muestra el nuevo precio y pide confirmación.
-  //    La orden NO se crea hasta que el cliente confirme.
-  if (
-    clientShippingCost !== undefined &&
-    clientShippingCost !== validatedShippingCost
-  ) {
-    return NextResponse.json(
-      {
-        error: 'shipping_price_changed',
-        newShippingCost: validatedShippingCost,
-        newTotal: total,
-      },
-      { status: 409 }
-    )
-  }
-
-  // 8. Crear orden con costo validado server-side + snapshot de bultos
-  const packageSnapshots = packagesToSnapshots(resolved.packages)
 
   const result = await createOrder({
     userId: user?.id ?? null,
