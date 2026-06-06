@@ -16,6 +16,7 @@ export function VariantSelector({
   onVariantChange,
 }: VariantSelectorProps) {
   if (variants.length === 0) return null
+  if (variants.length === 1 && variants[0].name.toLowerCase() === 'default') return null
 
   return (
     <div className="space-y-2">

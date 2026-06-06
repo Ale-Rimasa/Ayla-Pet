@@ -36,7 +36,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           <div>
             <h1 className="font-heading text-3xl font-bold leading-tight">{product.name}</h1>
             {product.description && (
-              <p className="mt-3 text-muted-foreground leading-relaxed">{product.description}</p>
+              <p className="mt-3 text-muted-foreground leading-relaxed whitespace-pre-wrap">{product.description}</p>
             )}
           </div>
 
@@ -70,7 +70,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 item={{
                   id: product.id,
                   variantId: selectedVariant.id,
-                  name: `${product.name} — ${selectedVariant.name}`,
+                  name: selectedVariant.name.toLowerCase() === 'default'
+                    ? product.name
+                    : `${product.name} — ${selectedVariant.name}`,
                   price: selectedVariant.price,
                   imageUrl: product.images[0]?.url ?? '',
                 }}
