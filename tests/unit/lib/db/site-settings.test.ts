@@ -95,7 +95,7 @@ describe('getStoreInfo', () => {
     const { getStoreInfo } = await import('@/lib/db/site-settings')
     const result = await getStoreInfo()
 
-    expect(result.name).toBe('Ayla Pets')
+    expect(result.name).toBe('Ayla')
     expect(result.email).toBe('supportaylapet@gmail.com')
   })
 

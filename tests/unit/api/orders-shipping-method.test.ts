@@ -70,6 +70,53 @@ const basePayload = {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+// ─── Task 2.2 RED: bodySchema engravingText validation ───────────────────────
+
+describe('POST /api/orders — engravingText bodySchema validation', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('accepts engravingText: "Bobi" and passes it to createOrder', async () => {
+    const { createOrder } = await import('@/lib/db/orders')
+    const { POST } = await import('@/app/api/orders/route')
+
+    await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'andreani-domicilio',
+      clientShippingCost: 500000,
+      engravingText: 'Bobi',
+    }) as any)
+
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ engravingText: 'Bobi' })
+    )
+  })
+
+  it('accepts request without engravingText field', async () => {
+    const { POST } = await import('@/app/api/orders/route')
+
+    const res = await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'andreani-domicilio',
+      clientShippingCost: 500000,
+    }) as any)
+
+    expect(res.status).not.toBe(400)
+  })
+
+  it('rejects engravingText longer than 20 characters with 400', async () => {
+    const { POST } = await import('@/app/api/orders/route')
+
+    const res = await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'andreani-domicilio',
+      clientShippingCost: 500000,
+      engravingText: 'A'.repeat(21),
+    }) as any)
+
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('POST /api/orders — correo-argentino-domicilio', () => {
   beforeEach(() => { vi.clearAllMocks() })
 

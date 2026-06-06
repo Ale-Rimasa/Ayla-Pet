@@ -47,6 +47,7 @@ const bodySchema = z.object({
   clientShippingCost: z.number().int().min(0).optional(),
   notes: z.string().optional(),
   observations: z.string().max(80).optional(),
+  engravingText: z.string().max(20).optional(),
 })
 
 type VariantWithProduct = {
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { customer, shipping, items, shippingMethod, clientShippingCost, notes, observations } = parsed.data
+  const { customer, shipping, items, shippingMethod, clientShippingCost, notes, observations, engravingText } = parsed.data
 
   // 4. Leer precios de variantes desde DB (nunca del cliente)
   const supabase = await createClient()
@@ -211,6 +212,7 @@ export async function POST(request: NextRequest) {
     shippingCost: validatedShippingCost,
     total,
     notes: observations ?? notes,
+    engravingText,
     shippingPackages: packageSnapshots,
   })
 

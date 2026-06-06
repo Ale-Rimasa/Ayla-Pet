@@ -2,15 +2,18 @@
 
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Plus, Trash2 } from 'lucide-react'
+import Image from 'next/image'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
 import { CheckoutSchema } from '@/lib/validations'
 import type { CheckoutFormValues } from '@/lib/validations'
 import { formatPrice } from '@/lib/utils'
 import { AR_PROVINCES_LIST } from '@/lib/constants'
+import { uploadOrderReferencePhoto } from '@/lib/actions/order-photos'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -21,10 +24,13 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 
 const WA_NUMBER = '5491139510032'
+
+const MAX_PHOTOS = 3
+const MAX_SIZE = 5 * 1024 * 1024
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
 const FORM_FIELDS: (
   | keyof CheckoutFormValues
@@ -82,6 +88,11 @@ function buildWhatsAppMessage(params: {
   return lines.join('\n')
 }
 
+interface PhotoPreview {
+  file: File
+  objectUrl: string
+}
+
 export function CheckoutForm() {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
@@ -94,6 +105,13 @@ export function CheckoutForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Photo state — held outside RHF (File is not serializable/SSR-safe for Zod)
+  const [photos, setPhotos] = useState<PhotoPreview[]>([])
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null)
+  const [photoFailOrderId, setPhotoFailOrderId] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -114,6 +132,54 @@ export function CheckoutForm() {
   })
 
   const observations = watch('observations')
+  const engravingText = watch('engravingText')
+
+  // ── Photo helpers ──────────────────────────────────────────────────────────
+
+  const handleAddClick = useCallback(() => {
+    if (photos.length >= MAX_PHOTOS) {
+      setPhotoError('Máximo 3 fotos')
+      return
+    }
+    photoInputRef.current?.click()
+  }, [photos.length])
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      // Reset so the same file can be re-selected if needed
+      e.target.value = ''
+      if (!file) return
+
+      if (photos.length >= MAX_PHOTOS) {
+        setPhotoError('Máximo 3 fotos')
+        return
+      }
+      if (!ALLOWED_MIME.includes(file.type)) {
+        setPhotoError('Solo se aceptan fotos JPEG, PNG, WebP o AVIF.')
+        return
+      }
+      if (file.size > MAX_SIZE || file.size === 0) {
+        setPhotoError('El archivo supera los 5 MB.')
+        return
+      }
+
+      setPhotoError(null)
+      const objectUrl = URL.createObjectURL(file)
+      setPhotos((prev) => [...prev, { file, objectUrl }])
+    },
+    [photos.length]
+  )
+
+  const handleRemovePhoto = useCallback((index: number) => {
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].objectUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+    setPhotoError(null)
+  }, [])
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleWhatsApp = async () => {
     const valid = await trigger(FORM_FIELDS as Parameters<typeof trigger>[0])
@@ -121,6 +187,8 @@ export function CheckoutForm() {
 
     setIsSubmitting(true)
     setError(null)
+    setPhotoNotice(null)
+    setPhotoFailOrderId(null)
 
     const data = getValues()
     setCustomerInfo(data.customer)
@@ -136,6 +204,7 @@ export function CheckoutForm() {
           items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
           shippingMethod: data.shippingMethod,
           observations: data.observations,
+          engravingText: data.engravingText || undefined,
         }),
       })
 
@@ -145,8 +214,26 @@ export function CheckoutForm() {
         throw new Error(body?.error ?? 'Error al crear el pedido')
       }
 
+      const orderId = body.orderId!
+
+      // Upload photos sequentially — failures are non-blocking
+      if (photos.length > 0) {
+        const failures: number[] = []
+        for (let i = 0; i < photos.length; i++) {
+          const fd = new FormData()
+          fd.append('orderId', orderId)
+          fd.append('file', photos[i].file)
+          const r = await uploadOrderReferencePhoto(fd)
+          if (!r.ok) failures.push(i)
+        }
+        if (failures.length > 0) {
+          setPhotoNotice(`No se pudieron subir ${failures.length} foto(s).`)
+          setPhotoFailOrderId(orderId)
+        }
+      }
+
       const message = buildWhatsAppMessage({
-        orderId: body.orderId!,
+        orderId,
         customer: data.customer,
         shippingAddress: data.shippingAddress,
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
@@ -160,7 +247,7 @@ export function CheckoutForm() {
         'noopener,noreferrer',
       )
 
-      router.push(`/checkout/confirmacion?orderId=${body.orderId}`)
+      router.push(`/checkout/confirmacion?orderId=${orderId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
       setIsSubmitting(false)
@@ -191,7 +278,7 @@ export function CheckoutForm() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input id="phone" type="tel" autoComplete="tel" {...register('customer.phone')} aria-invalid={!!errors.customer?.phone} />
+                <Input id="phone" type="tel" autoComplete="tel" maxLength={10} {...register('customer.phone')} aria-invalid={!!errors.customer?.phone} />
                 {errors.customer?.phone && <p className="text-xs text-destructive" role="alert">{errors.customer.phone.message}</p>}
               </div>
             </div>
@@ -225,7 +312,11 @@ export function CheckoutForm() {
                         className="w-full"
                         aria-invalid={!!errors.shippingAddress?.province}
                       >
-                        <SelectValue placeholder="Seleccioná una provincia" />
+                        <span className={!field.value ? 'text-sm text-muted-foreground' : 'text-sm'}>
+                          {field.value
+                            ? AR_PROVINCES_LIST.find((p) => p.code === field.value)?.name
+                            : 'Seleccioná una provincia'}
+                        </span>
                       </SelectTrigger>
                       <SelectContent>
                         {AR_PROVINCES_LIST.map(({ name, code }) => (
@@ -273,6 +364,117 @@ export function CheckoutForm() {
               </div>
             </div>
           </section>
+
+          <Separator />
+
+          {/* ── Personalización ── */}
+          <section aria-labelledby="personalization-heading">
+            <h2 id="personalization-heading" className="mb-4 text-lg font-semibold">
+              Personalización{' '}
+              <span className="text-sm font-normal text-muted-foreground">(opcional)</span>
+            </h2>
+
+            {/* Engraving text field */}
+            <div className="space-y-1.5 mb-6">
+              <Label htmlFor="engravingText">Agregar frase, nombre o fecha a grabar</Label>
+              <Input
+                id="engravingText"
+                placeholder="Ej: Tobías 2024"
+                maxLength={20}
+                {...register('engravingText')}
+                aria-invalid={!!errors.engravingText}
+              />
+              <div className="flex justify-between items-center">
+                {errors.engravingText
+                  ? <p className="text-xs text-destructive" role="alert">{errors.engravingText.message}</p>
+                  : <span />
+                }
+                <p className="text-xs text-muted-foreground text-right">{(engravingText ?? '').length}/20</p>
+              </div>
+            </div>
+
+            {/* Photo picker */}
+            <div className="space-y-3">
+              <Label>Fotos de referencia</Label>
+              <p className="text-xs text-muted-foreground">
+                Podés subir hasta 3 fotos como referencia para el grabado.
+              </p>
+
+              <div className="grid grid-cols-3 gap-3">
+                {photos.map((photo, idx) => (
+                  <div
+                    key={photo.objectUrl}
+                    className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
+                  >
+                    <Image
+                      src={photo.objectUrl}
+                      alt={`Foto de referencia ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 33vw, 20vw"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(idx)}
+                      aria-label="Eliminar foto"
+                      className="absolute right-1 top-1 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-sm transition-opacity hover:opacity-90"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {photos.length < MAX_PHOTOS && (
+                  <button
+                    type="button"
+                    onClick={handleAddClick}
+                    className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/50 hover:bg-muted"
+                    aria-label="Agregar foto"
+                  >
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <Plus className="h-5 w-5" />
+                      <span className="text-xs font-medium">Agregar</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {photoError && (
+                <p className="text-xs text-destructive" role="alert">{photoError}</p>
+              )}
+
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                className="sr-only"
+                onChange={handleFileChange}
+                aria-hidden="true"
+              />
+
+              <p className="text-xs text-muted-foreground">
+                {photos.length} de {MAX_PHOTOS} fotos seleccionadas
+              </p>
+            </div>
+          </section>
+
+          {/* ── Non-blocking photo notice ── */}
+          {photoNotice && (
+            <div
+              className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800"
+              role="alert"
+            >
+              {photoNotice}{' '}
+              {photoFailOrderId && (
+                <Link
+                  href={`/mi-pedido/${photoFailOrderId}/fotos`}
+                  className="underline font-medium"
+                >
+                  Podés agregarlas acá
+                </Link>
+              )}
+            </div>
+          )}
 
           {error && (
             <p className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">

@@ -35,6 +35,8 @@ export function OrdersTable({ orders, searchQuery = '' }: OrdersTableProps) {
   }, [searchQuery])
 
   useEffect(() => {
+    if (debouncedQuery === searchQuery) return
+
     const params = new URLSearchParams(searchParams.toString())
     const trimmed = debouncedQuery.trim()
 
@@ -47,7 +49,7 @@ export function OrdersTable({ orders, searchQuery = '' }: OrdersTableProps) {
     params.delete('page')
     const qs = params.toString()
     router.replace(qs ? `/admin/pedidos?${qs}` : '/admin/pedidos')
-  }, [debouncedQuery, router, searchParams])
+  }, [debouncedQuery, searchQuery, router, searchParams])
 
   return (
     <div className="space-y-3">

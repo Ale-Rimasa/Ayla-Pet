@@ -53,6 +53,7 @@ export interface Order {
   mpPreferenceId: string | null
   mpPaymentId: string | null
   notes: string | null
+  engravingText?: string
   createdAt: string
   updatedAt: string
 }
@@ -122,6 +123,7 @@ export interface CreateOrderPayload {
   shippingCost: number    // centavos ARS (calculado server-side, nunca del cliente)
   total: number           // centavos ARS
   notes?: string
+  engravingText?: string
   shippingPackages?: import('@/types/shipping').ShippingPackageSnapshot[]
 }
 

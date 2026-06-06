@@ -2,6 +2,59 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createSupabaseMock } from '../helpers/supabase-mock'
 import type { CreateOrderPayload, OrderStatus } from '@/types'
 
+// ─── Task 2.1 RED: mapOrder engraving_text mapping ───────────────────────────
+
+describe('mapOrder — engraving_text', () => {
+  beforeEach(() => { vi.resetModules() })
+
+  const baseRow = {
+    id: 'order-uuid',
+    status: 'pending' as OrderStatus,
+    customer_name: 'Ana García',
+    customer_email: 'ana@test.com',
+    customer_phone: '1112345678',
+    shipping_street: 'Av. Corrientes 1234',
+    shipping_city: 'CABA',
+    shipping_province: 'Buenos Aires',
+    shipping_postal_code: '1043',
+    subtotal: 500000,
+    shipping_cost: 50000,
+    total: 550000,
+    mp_preference_id: null,
+    mp_payment_id: null,
+    notes: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    order_items: [],
+  }
+
+  it('maps engraving_text: "Luna" → engravingText: "Luna"', async () => {
+    const row = { ...baseRow, engraving_text: 'Luna' }
+    const { client, chain } = createSupabaseMock({ data: null, error: null })
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null })
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
+
+    const { getOrderById } = await import('@/lib/db/orders')
+    const result = await getOrderById('order-uuid')
+
+    expect(result?.engravingText).toBe('Luna')
+  })
+
+  it('maps engraving_text: null → engravingText: undefined', async () => {
+    const row = { ...baseRow, engraving_text: null }
+    const { client, chain } = createSupabaseMock({ data: null, error: null })
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null })
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
+
+    const { getOrderById } = await import('@/lib/db/orders')
+    const result = await getOrderById('order-uuid')
+
+    expect(result?.engravingText).toBeUndefined()
+  })
+})
+
 // Mock the admin client module
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),

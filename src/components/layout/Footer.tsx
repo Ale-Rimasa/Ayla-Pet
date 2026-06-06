@@ -64,7 +64,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2 sm:col-span-1 space-y-4">
             {/* Logo */}
-            <Link href="/" className="inline-flex items-center gap-2">
+            <Link href="/" className="inline-flex items-center">
               <Image
                 src="/logo-new.png"
                 alt={BRAND.name}
@@ -72,9 +72,6 @@ export function Footer() {
                 height={44}
                 className="rounded-full object-cover"
               />
-              <span className="font-heading text-xl font-bold text-[#111111]">
-                {BRAND.name}
-              </span>
             </Link>
             <p className="text-sm text-[#6B6258] leading-relaxed max-w-[200px]">
               Accesorios personalizados para que los amemos como familia.

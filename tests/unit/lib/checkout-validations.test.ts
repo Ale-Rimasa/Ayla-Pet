@@ -15,6 +15,7 @@ const validBase = {
     postalCode: '1043',
   },
   shippingMethod: 'andreani-domicilio' as const,
+  paymentMethod: 'transfer' as const,
 }
 
 describe('CheckoutSchema — province enum (AR-X codes)', () => {

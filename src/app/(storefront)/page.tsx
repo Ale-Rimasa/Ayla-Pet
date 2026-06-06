@@ -88,10 +88,9 @@ export default async function HomePage() {
                   href={LINKS.igChat}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-sf-ink bg-transparent px-6 text-sm font-semibold text-sf-ink transition-colors hover:bg-sf-ink hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sf-ink"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-sf-ink bg-transparent px-6 text-sm font-semibold text-sf-ink transition-colors hover:bg-sf-ink hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sf-ink"
                 >
                   CONTACTO
-                  <span aria-hidden="true">🐾</span>
                 </a>
               </div>
             </div>
@@ -302,10 +301,9 @@ export default async function HomePage() {
                 href={LINKS.igChat}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-sf-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-7 text-sm font-bold text-sf-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 CONTACTO
-                <span aria-hidden="true">🐾</span>
               </a>
             </div>
           </div>

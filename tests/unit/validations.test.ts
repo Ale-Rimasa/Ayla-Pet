@@ -15,6 +15,7 @@ const validData = {
     postalCode: '1043',
   },
   shippingMethod: 'andreani-domicilio' as const,
+  paymentMethod: 'transfer' as const,
 }
 
 describe('CheckoutSchema', () => {

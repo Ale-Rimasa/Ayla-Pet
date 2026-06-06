@@ -54,7 +54,7 @@ export async function Navbar() {
             <MobileNav categories={navItems} />
             <Link
               href="/"
-              className="hidden lg:flex shrink-0 items-center gap-2 group"
+              className="hidden lg:flex shrink-0 items-center group"
               aria-label={BRAND.name}
             >
               <Image
@@ -65,9 +65,6 @@ export async function Navbar() {
                 className="rounded-full object-cover transition-opacity group-hover:opacity-80"
                 priority
               />
-              <span className="font-heading text-xl font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
-                {BRAND.name}
-              </span>
             </Link>
           </div>
 
@@ -76,7 +73,7 @@ export async function Navbar() {
             {/* Logo — mobile only */}
             <Link
               href="/"
-              className="flex lg:hidden shrink-0 items-center gap-1.5 group"
+              className="flex lg:hidden shrink-0 items-center group"
               aria-label={BRAND.name}
             >
               <Image
@@ -86,9 +83,6 @@ export async function Navbar() {
                 height={44}
                 className="rounded-full object-cover transition-opacity group-hover:opacity-80"
               />
-              <span className="font-heading text-base font-bold tracking-tight text-[#111111] transition-opacity group-hover:opacity-80">
-                {BRAND.name}
-              </span>
             </Link>
 
             {/* Nav — desktop only */}

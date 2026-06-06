@@ -255,6 +255,7 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          engraving_text: string | null
           id: string
           mp_payment_id: string | null
           mp_preference_id: string | null
@@ -275,6 +276,7 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string
+          engraving_text?: string | null
           id?: string
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -295,6 +297,7 @@ export type Database = {
           customer_email?: string
           customer_name?: string
           customer_phone?: string
+          engraving_text?: string | null
           id?: string
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -685,6 +688,26 @@ export type Database = {
               p_customer_email: string
               p_customer_name: string
               p_customer_phone: string
+              p_items?: Json
+              p_notes?: string
+              p_shipping_city: string
+              p_shipping_cost: number
+              p_shipping_packages?: Json
+              p_shipping_postal_code: string
+              p_shipping_province: string
+              p_shipping_street: string
+              p_subtotal: number
+              p_total: number
+              p_user_id?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_engraving_text?: string
               p_items?: Json
               p_notes?: string
               p_shipping_city: string

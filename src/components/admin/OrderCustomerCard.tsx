@@ -20,6 +20,12 @@ export function OrderCustomerCard({ order }: OrderCustomerCardProps) {
           <Info label="Teléfono" value={customer.phone} />
         </div>
 
+        {order.engravingText && (
+          <div className="border-t pt-4">
+            <Info label="Frase a grabar" value={order.engravingText} />
+          </div>
+        )}
+
         <div className="border-t pt-4">
           <h3 className="mb-2 text-sm font-medium">Envío</h3>
           <div className="space-y-2">

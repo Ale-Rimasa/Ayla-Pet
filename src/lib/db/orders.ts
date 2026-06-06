@@ -39,6 +39,7 @@ interface DbOrder {
   mp_preference_id: string | null
   mp_payment_id: string | null
   notes: string | null
+  engraving_text: string | null
   created_at: string
   updated_at: string
   order_items: DbOrderItem[]
@@ -98,6 +99,7 @@ function mapOrder(row: DbOrder): Order {
     mpPreferenceId: row.mp_preference_id,
     mpPaymentId: row.mp_payment_id,
     notes: row.notes,
+    engravingText: row.engraving_text ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -156,6 +158,7 @@ export async function createOrder(
       width_mm: pkg.widthMm,
       length_mm: pkg.lengthMm,
     })),
+    p_engraving_text: payload.engravingText ?? null,
   }
 
   const { data, error } = await supabase.rpc('create_order', params as CreateOrderArgs)
