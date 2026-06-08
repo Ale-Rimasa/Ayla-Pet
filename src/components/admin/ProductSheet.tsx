@@ -680,7 +680,7 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                                   variant="ghost"
                                   className="text-destructive hover:text-destructive"
                                   onClick={() => handleDeleteVariant(variant.id)}
-                                  disabled={isVariantPending}
+                                  disabled={isVariantPending || variants.length === 1}
                                   aria-label="Eliminar variante"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />

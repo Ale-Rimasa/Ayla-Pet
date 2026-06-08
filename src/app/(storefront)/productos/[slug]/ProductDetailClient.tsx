@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { ProductTrustBar } from '@/components/product/ProductTrustBar'
-import { VariantSelector } from '@/components/product/VariantSelector'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { PriceDisplay } from '@/components/shared/PriceDisplay'
@@ -43,15 +42,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           {/* Price */}
           {selectedVariant && (
             <PriceDisplay centavos={selectedVariant.price} size="lg" />
-          )}
-
-          {/* Variant selector */}
-          {product.variants.length > 0 && (
-            <VariantSelector
-              variants={product.variants}
-              selectedId={selectedVariant?.id ?? null}
-              onVariantChange={setSelectedVariant}
-            />
           )}
 
           {/* Stock label */}
