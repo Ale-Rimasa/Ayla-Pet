@@ -141,6 +141,40 @@ export async function softDeleteProduct(
   return { ok: true }
 }
 
+export async function restoreProduct(
+  id: string
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin()
+
+  const parsed = idSchema.safeParse(id)
+  if (!parsed.success) return { ok: false, error: 'invalid_id' }
+
+  const supabase = createAdminClient()
+
+  const { error: productError } = await supabase
+    .from('products')
+    .update({ deleted_at: null })
+    .eq('id', parsed.data)
+
+  if (productError) {
+    return { ok: false, error: productError.message }
+  }
+
+  const { error: variantError } = await supabase
+    .from('product_variants')
+    .update({ deleted_at: null })
+    .eq('product_id', parsed.data)
+
+  if (variantError) {
+    return { ok: false, error: variantError.message }
+  }
+
+  revalidatePath('/admin/productos')
+  revalidatePath('/productos')
+
+  return { ok: true }
+}
+
 export async function createVariant(
   input: CreateVariantInput
 ): Promise<{ ok: boolean; data?: { id: string }; error?: string }> {

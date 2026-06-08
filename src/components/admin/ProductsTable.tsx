@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { ProductSheet } from '@/components/admin/ProductSheet'
-import { softDeleteProduct } from '@/lib/actions/products'
+import { softDeleteProduct, restoreProduct } from '@/lib/actions/products'
 import { formatPrice } from '@/lib/utils'
 import type { Product, Category } from '@/types'
 
@@ -46,9 +46,18 @@ export function ProductsTable({ products, categories: cats }: ProductsTableProps
   async function handleDelete(id: string) {
     const result = await softDeleteProduct(id)
     if (result.ok) {
-      toast.success('Producto eliminado')
+      toast.success('Producto desactivado')
     } else {
-      toast.error(result.error ?? 'Error al eliminar')
+      toast.error(result.error ?? 'Error al desactivar')
+    }
+  }
+
+  async function handleRestore(id: string) {
+    const result = await restoreProduct(id)
+    if (result.ok) {
+      toast.success('Producto reactivado')
+    } else {
+      toast.error(result.error ?? 'Error al reactivar')
     }
   }
 
@@ -138,33 +147,60 @@ export function ProductsTable({ products, categories: cats }: ProductsTableProps
                         <span className="sr-only">Editar</span>
                       </Button>
 
-                      <AlertDialog>
-                        <AlertDialogTrigger
-                          render={
-                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Eliminar</span>
-                            </Button>
-                          }
-                        />
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esto ocultará &quot;{product.name}&quot; del catálogo. Podés reactivarlo después.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(product.id)}
-                              className="bg-destructive hover:bg-destructive/90"
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      {product.deletedAt ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700">
+                                <RotateCcw className="h-4 w-4" />
+                                <span className="sr-only">Reactivar</span>
+                              </Button>
+                            }
+                          />
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Reactivar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                &quot;{product.name}&quot; volverá a aparecer en el catálogo.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRestore(product.id)}>
+                                Reactivar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Desactivar</span>
+                              </Button>
+                            }
+                          />
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Desactivar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esto ocultará &quot;{product.name}&quot; del catálogo. Podés reactivarlo después.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(product.id)}
+                                className="bg-destructive hover:bg-destructive/90"
+                              >
+                                Desactivar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

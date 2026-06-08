@@ -249,14 +249,14 @@ export default async function HomePage() {
             {TESTIMONIAL_SCREENSHOTS.map((t) => (
               <div
                 key={t.src}
-                className="relative w-64 rounded-2xl overflow-hidden border border-sf-sand shadow-sm shrink-0"
+                className="relative w-64 h-[400px] rounded-2xl overflow-hidden border border-sf-sand shadow-sm shrink-0 bg-[#EAE6DF]"
               >
                 <Image
                   src={t.src}
                   alt={t.alt}
-                  width={256}
-                  height={360}
-                  className="object-cover w-full h-auto"
+                  fill
+                  sizes="256px"
+                  className="object-cover object-top"
                 />
               </div>
             ))}
@@ -285,7 +285,7 @@ export default async function HomePage() {
             alt=""
             fill
             sizes="50vw"
-            className="object-cover object-center"
+            className="object-contain object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-sf-ink via-sf-ink/50 to-transparent" />
         </div>
