@@ -279,19 +279,20 @@ export default async function HomePage() {
           FINAL CTA BANNER — "Creá hoy un recuerdo único"
       ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-sf-ink">
-        <div className="absolute inset-y-0 right-0 w-1/2 hidden lg:block" aria-hidden="true">
+        {/* Desktop: imagen derecha, 3/5 del ancho */}
+        <div className="absolute inset-y-0 right-0 w-3/5 hidden lg:block" aria-hidden="true">
           <Image
             src="/mate-cta.jpeg"
             alt=""
             fill
-            sizes="50vw"
+            sizes="60vw"
             className="object-contain object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-sf-ink via-sf-ink/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-sf-ink via-sf-ink/40 to-transparent" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 lg:max-w-[38%]">
             <h2 className="font-heading text-3xl font-bold text-white leading-tight sm:text-4xl lg:text-5xl">
               Creá hoy un recuerdo único
             </h2>
@@ -308,6 +309,17 @@ export default async function HomePage() {
                 CONTACTO
               </a>
             </div>
+          </div>
+
+          {/* Mobile: imagen debajo del texto */}
+          <div className="mt-8 relative h-72 rounded-2xl overflow-hidden lg:hidden">
+            <Image
+              src="/mate-cta.jpeg"
+              alt="Mate de algarrobo grabado a laser"
+              fill
+              sizes="100vw"
+              className="object-contain object-center"
+            />
           </div>
         </div>
       </section>
