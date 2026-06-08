@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
@@ -43,29 +43,24 @@ export function CustomersTable({
   search = '',
 }: CustomersTableProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [query, setQuery] = useState(search)
   const debouncedQuery = useDebounce(query, 300)
   const totalPages = Math.ceil(total / pageSize)
+  const didMount = useRef(false)
 
   useEffect(() => {
     setQuery(search)
   }, [search])
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString())
-    const trimmed = debouncedQuery.trim()
-
-    if (trimmed) {
-      params.set('search', trimmed)
-    } else {
-      params.delete('search')
+    if (!didMount.current) {
+      didMount.current = true
+      return
     }
-
-    params.delete('page')
-    const qs = params.toString()
-    router.replace(qs ? `/admin/clientes?${qs}` : '/admin/clientes')
-  }, [debouncedQuery, router, searchParams])
+    const trimmed = debouncedQuery.trim()
+    const qs = trimmed ? `search=${encodeURIComponent(trimmed)}` : ''
+    router.push(qs ? `/admin/clientes?${qs}` : '/admin/clientes')
+  }, [debouncedQuery, router])
 
   return (
     <div className="space-y-3">
