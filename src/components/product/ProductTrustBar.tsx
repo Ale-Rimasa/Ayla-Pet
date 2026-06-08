@@ -1,29 +1,47 @@
 import { Heart, Shield, Truck, Wrench } from 'lucide-react'
 
-const benefits = [
-  {
-    icon: Wrench,
-    title: 'Grabado permanente',
-    description: 'No se borra con el uso ni con el tiempo',
-  },
-  {
-    icon: Shield,
-    title: 'Material resistente',
-    description: 'Acero inoxidable y dorado de alta calidad',
-  },
-  {
-    icon: Truck,
-    title: 'Envíos a todo el país',
-    description: 'Recibí tu pedido en la puerta de tu casa',
-  },
-  {
-    icon: Heart,
-    title: 'Hecho con amor',
-    description: 'Cada producto es único y hecho especialmente para vos',
-  },
-]
+const METAL_MATERIAL = {
+  title: 'Material resistente',
+  description: 'Acero inoxidable y dorado de alta calidad',
+}
 
-export function ProductTrustBar() {
+const WOOD_MATERIAL = {
+  title: 'Calidad natural',
+  description: 'Madera cuidadosamente trabajada para durar',
+}
+
+interface ProductTrustBarProps {
+  productName?: string
+}
+
+export function ProductTrustBar({ productName = '' }: ProductTrustBarProps) {
+  const name = productName.toLowerCase()
+  const isWood = name.includes('madera') || name.includes('algarrobo')
+  const material = isWood ? WOOD_MATERIAL : METAL_MATERIAL
+
+  const benefits = [
+    {
+      icon: Wrench,
+      title: 'Grabado permanente',
+      description: 'No se borra con el uso ni con el tiempo',
+    },
+    {
+      icon: Shield,
+      title: material.title,
+      description: material.description,
+    },
+    {
+      icon: Truck,
+      title: 'Envíos a todo el país',
+      description: 'Recibí tu pedido en la puerta de tu casa',
+    },
+    {
+      icon: Heart,
+      title: 'Hecho con amor',
+      description: 'Cada producto es único y hecho especialmente para vos',
+    },
+  ]
+
   return (
     <div className="grid grid-cols-2 gap-4 border-y py-6 md:grid-cols-4">
       {benefits.map((benefit) => (

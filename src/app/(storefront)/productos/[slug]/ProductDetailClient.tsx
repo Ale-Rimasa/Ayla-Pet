@@ -28,7 +28,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         {/* Gallery + trust bar */}
         <div>
           <ProductGallery images={product.images} productName={product.name} />
-          <ProductTrustBar />
+          <ProductTrustBar productName={product.name} />
         </div>
 
         {/* Details */}

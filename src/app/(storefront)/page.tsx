@@ -281,7 +281,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-sf-ink">
         <div className="absolute inset-y-0 right-0 w-1/2 hidden lg:block" aria-hidden="true">
           <Image
-            src="/Mate sección - Crea hoy un recuerdo unico.jpeg"
+            src="/mate-cta.jpeg"
             alt=""
             fill
             sizes="50vw"
