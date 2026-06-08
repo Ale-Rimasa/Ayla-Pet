@@ -21,36 +21,35 @@ export default function QuienesSomosPage() {
       </div>
 
       <div className="space-y-6 text-[#3D3530] text-base leading-relaxed">
-        <p className="text-lg font-semibold text-[#111111]">¡Hola! Somos {BRAND.name}</p>
-
         <p>
-          Creamos piezas personalizadas para que puedas llevar siempre con vos a ese compañero
-          que ocupa un lugar enorme en tu vida. Sabemos que una mascota no es "solo una mascota":
-          es familia, compañía, amor incondicional y parte de nuestra historia.
+          En {BRAND.name} creamos piezas personalizadas pensadas para guardar recuerdos, nombres,
+          fechas, imágenes e historias que tienen un significado especial. Creemos que un objeto
+          puede ser mucho más que un accesorio: puede representar una persona, una mascota, un
+          momento, una etapa de la vida o un regalo hecho con amor.
         </p>
 
         <p>
-          Cada producto que hacemos nace con mucho cuidado, paciencia y dedicación. Nos gusta
-          pensar que detrás de cada grabado hay un recuerdo, una mirada, una personalidad única
-          y un vínculo que merece ser celebrado.
+          Cada producto que hacemos nace con cuidado, paciencia y dedicación. Nos gusta pensar
+          que detrás de cada grabado hay una historia única: una mirada, una frase, una inicial,
+          una fecha importante o un recuerdo que merece ser conservado de una forma especial.
         </p>
 
         <p>
-          Trabajamos cada diseño de forma especial, buscando que conserve la esencia de tu
-          mascota y que el resultado sea delicado, lindo y duradero. Desde la imagen que nos
-          compartís hasta el grabado final, cuidamos cada detalle para que recibas una pieza
-          hecha con amor.
+          Trabajamos cada diseño de manera personalizada, buscando que el resultado sea delicado,
+          prolijo y duradero. Desde la idea que nos compartís hasta el producto final, cuidamos
+          cada detalle para que recibas una pieza hecha con dedicación y pensada especialmente
+          para vos.
         </p>
 
         <p>
           En {BRAND.name} creemos que los pequeños objetos también pueden guardar grandes emociones.
-          Por eso hacemos cada chapita, llavero, medallita o accesorio como si fuera único,
-          porque para vos también lo es.
+          Por eso hacemos cada mate, llavero, chapita, medallita o accesorio como si fuera único,
+          porque para quien lo recibe también lo es.
         </p>
 
         <p className="font-medium text-[#111111]">
-          Gracias por confiar en nosotras para transformar ese amor tan grande en un recuerdo
-          que puedas llevar siempre cerca. 🤍
+          Gracias por confiar en nosotras para transformar tus recuerdos, vínculos y momentos
+          importantes en piezas que puedas llevar, regalar o conservar siempre cerca. 🤍
         </p>
       </div>
 

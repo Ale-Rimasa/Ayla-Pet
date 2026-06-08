@@ -9,7 +9,7 @@ export const BRAND = {
   displayLine2: '',
   adminEmail: 'supportaylapet@gmail.com',
   domain: 'ptlaser.com.ar',
-  instagram: 'https://www.instagram.com/aylapets_/',
+  instagram: 'https://www.instagram.com/aylastudio.ba/?hl=es',
   email: 'supportaylapet@gmail.com',
 } as const
 
@@ -41,7 +41,8 @@ export const HERO_DEFAULTS = {
 } as const
 
 export const LINKS = {
-  igChat: 'https://ig.me/m/aylapets_',
+  igChat: 'https://www.instagram.com/aylastudio.ba/?hl=es',
+  igDirect: 'https://www.instagram.com/direct/t/18035284982615487/?hl=es',
 } as const
 
 export const AR_PROVINCES: Record<string, string> = {

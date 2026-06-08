@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Mail } from 'lucide-react'
-import { BRAND, CATEGORY_SLUGS } from '@/lib/constants'
+import { BRAND, LINKS } from '@/lib/constants'
 import { buildWhatsAppLink } from '@/lib/utils'
 import { NewsletterForm } from './NewsletterForm'
 
@@ -113,26 +113,6 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#6B6258]">
               <li>
-                <Link href={`/categorias/${CATEGORY_SLUGS.MASCOTAS}`} className="transition-colors hover:text-[#B68A57]">
-                  Chapitas con datos
-                </Link>
-              </li>
-              <li>
-                <Link href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`} className="transition-colors hover:text-[#B68A57]">
-                  Llaveros con imagen
-                </Link>
-              </li>
-              <li>
-                <Link href={`/categorias/${CATEGORY_SLUGS.CHAPAS}`} className="transition-colors hover:text-[#B68A57]">
-                  Pulseras con imagen
-                </Link>
-              </li>
-              <li>
-                <Link href={`/categorias/${CATEGORY_SLUGS.MASCOTAS}`} className="transition-colors hover:text-[#B68A57]">
-                  Collares con imagen
-                </Link>
-              </li>
-              <li>
                 <Link href="/productos" className="transition-colors hover:text-[#B68A57]">
                   Todos los productos
                 </Link>
@@ -158,7 +138,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://ig.me/m/aylapets_"
+                  href={LINKS.igDirect}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transition-colors hover:text-[#B68A57]"
