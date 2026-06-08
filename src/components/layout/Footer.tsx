@@ -74,7 +74,7 @@ export function Footer() {
               />
             </Link>
             <p className="text-sm text-[#6B6258] leading-relaxed max-w-[200px]">
-              Accesorios personalizados para que los amemos como familia.
+              Creamos piezas personalizadas para conservar historias, nombres y recuerdos únicos.
             </p>
             {/* Social icons */}
             <div className="flex items-center gap-3">

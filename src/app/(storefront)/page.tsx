@@ -50,9 +50,10 @@ const TESTIMONIAL_SCREENSHOTS = [
     src: '/examples/testimonial-1.jpg',
     alt: 'Recomendación de cliente por WhatsApp',
   },
-  // Agregar más capturas acá
-  // { src: '/examples/testimonial-2.jpg', alt: '...' },
-  // { src: '/examples/testimonial-3.jpg', alt: '...' },
+  {
+    src: '/Galo-Testimonial.png',
+    alt: 'Recomendación de cliente',
+  },
 ]
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -264,7 +265,7 @@ export default async function HomePage() {
           <div className="mt-10 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-8">
             <div className="flex items-center gap-2 text-sm text-sf-warm">
               <Heart className="h-4 w-4 text-sf-gold" aria-hidden="true" />
-              Más de 2.500 pedidos entregados con amor
+              Cada pedido, hecho con dedicación y cuidado
             </div>
             <div className="flex items-center gap-2 text-sm text-sf-warm">
               <Star className="h-4 w-4 fill-sf-gold text-sf-gold" aria-hidden="true" />
@@ -278,14 +279,15 @@ export default async function HomePage() {
           FINAL CTA BANNER — "Creá hoy un recuerdo único"
       ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-sf-ink">
-        <div className="absolute inset-0" aria-hidden="true">
+        <div className="absolute inset-y-0 right-0 w-1/2 hidden lg:block" aria-hidden="true">
           <Image
-            src="/mockups/cta-recuerdo-unico.svg"
+            src="/Mate sección - Crea hoy un recuerdo unico.jpeg"
             alt=""
             fill
-            sizes="100vw"
-            className="object-cover object-center opacity-20"
+            sizes="50vw"
+            className="object-cover object-center"
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-sf-ink via-sf-ink/50 to-transparent" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">

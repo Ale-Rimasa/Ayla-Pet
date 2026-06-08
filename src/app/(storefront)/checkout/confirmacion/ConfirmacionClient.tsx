@@ -62,7 +62,7 @@ export function ConfirmacionClient({ order, mpStatus, transferInfo }: Confirmaci
           {isApproved && 'Tu pago fue acreditado. Ya podés subir las fotos de tu mascota.'}
           {isPending && 'MercadoPago está procesando tu pago. Te avisaremos por email cuando se acredite.'}
           {isRejected && 'Tu pago no pudo procesarse. Podés reintentar con otro medio de pago.'}
-          {isTransfer && 'Completá la transferencia y luego subí las fotos de tu mascota.'}
+          {isTransfer && 'Si transferís, favor de mandar el comprobante al WhatsApp correspondiente.'}
         </p>
 
         <p className="mt-1 text-sm text-muted-foreground">
@@ -92,9 +92,20 @@ export function ConfirmacionClient({ order, mpStatus, transferInfo }: Confirmaci
 
             <Separator className="my-3" />
 
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal sin descuento</span>
+              <span>{formatPrice(order.total)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Descuento 10%</span>
+              <span>-{formatPrice(Math.round(order.total * 0.1))}</span>
+            </div>
+
+            <Separator className="my-3" />
+
             <div className="flex justify-between text-base font-semibold">
               <span>Total a transferir</span>
-              <span className="text-secondary">{formatPrice(order.total)}</span>
+              <span className="text-secondary">{formatPrice(Math.round(order.total * 0.9))}</span>
             </div>
           </div>
 
@@ -177,7 +188,7 @@ export function ConfirmacionClient({ order, mpStatus, transferInfo }: Confirmaci
       </div>
 
       <p className="mt-3 text-center text-xs text-muted-foreground">
-        {isTransfer && 'Podés subir las fotos ahora mismo. Confirmamos tu pago en cuanto acreditemos la transferencia.'}
+        {isTransfer && 'Podés volver a cambiar la foto. Confirmamos tu pago en cuanto acreditemos la transferencia.'}
         {isApproved && 'Recibirás un email con los detalles de tu pedido.'}
         {isPending && 'Podés subir las fotos ahora mismo. Te notificaremos cuando el pago sea confirmado.'}
         {isRejected && 'El pedido fue creado pero no acreditado. Podés reintentar o contactarnos por WhatsApp.'}

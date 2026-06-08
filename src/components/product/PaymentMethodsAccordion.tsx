@@ -41,6 +41,7 @@ export function PaymentMethodsAccordion() {
             <Banknote className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
             <div>
               <p className="text-sm font-medium">Transferencia bancaria</p>
+              <p className="text-xs text-green-600 font-medium">10% Descuento</p>
             </div>
           </div>
         </AccordionContent>
