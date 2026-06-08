@@ -41,11 +41,6 @@ export function PaymentMethodsAccordion() {
             <Banknote className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
             <div>
               <p className="text-sm font-medium">Transferencia bancaria</p>
-              <p className="text-xs text-muted-foreground">
-                Alias:{' '}
-                <span className="font-mono font-medium text-foreground">ayla.pagos</span>
-                {/* TODO: reemplazar con alias real */}
-              </p>
             </div>
           </div>
         </AccordionContent>

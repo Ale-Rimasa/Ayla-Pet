@@ -26,7 +26,7 @@ import {
   SelectTrigger,
 } from '@/components/ui/select'
 
-const WA_NUMBER = '5491139510032'
+const WA_NUMBER = '5491125412608'
 
 const MAX_PHOTOS = 3
 const MAX_SIZE = 5 * 1024 * 1024

@@ -20,10 +20,6 @@ export function ShippingQuoteAccordion() {
         </AccordionTrigger>
 
         <AccordionContent className="pb-4 space-y-4 text-sm">
-          <p className="font-medium">
-            Acordar con AYLA vía WhatsApp una vez realizado el pago.
-          </p>
-
           <p className="text-muted-foreground">
             Ofrecemos envíos con{' '}
             <strong className="text-foreground">Correo Argentino</strong> y{' '}
@@ -37,6 +33,7 @@ export function ShippingQuoteAccordion() {
               <li>• Sucursal</li>
               <li>• Retiro en Parque Patricio</li>
               <li>• Retiro en Gral. Pacheco</li>
+              <li>• Retiro en Nordelta</li>
             </ul>
           </div>
 
@@ -49,7 +46,6 @@ export function ShippingQuoteAccordion() {
               <li>
                 • <strong className="text-foreground">PAQ.AR Clásico</strong> — 2 a 5 días hábiles (una vez despachado)
               </li>
-              <li>• El pago del envío se genera mediante un link de Mercado Pago.</li>
             </ul>
           </div>
 
