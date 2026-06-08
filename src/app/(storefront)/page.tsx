@@ -256,7 +256,7 @@ export default async function HomePage() {
                   alt={t.alt}
                   fill
                   sizes="256px"
-                  className="object-cover object-top"
+                  className="object-contain"
                 />
               </div>
             ))}
@@ -279,6 +279,17 @@ export default async function HomePage() {
           FINAL CTA BANNER — "Creá hoy un recuerdo único"
       ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-sf-ink">
+        {/* Mobile: imagen de fondo detrás del texto */}
+        <div className="absolute inset-0 lg:hidden" aria-hidden="true">
+          <Image
+            src="/mate-cta.jpeg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-center brightness-50"
+          />
+        </div>
+
         {/* Desktop: imagen derecha, 3/5 del ancho */}
         <div className="absolute inset-y-0 right-0 w-3/5 hidden lg:block" aria-hidden="true">
           <Image
@@ -286,7 +297,7 @@ export default async function HomePage() {
             alt=""
             fill
             sizes="60vw"
-            className="object-contain object-center"
+            className="object-contain object-center brightness-110"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-sf-ink via-sf-ink/40 to-transparent" />
         </div>
@@ -309,17 +320,6 @@ export default async function HomePage() {
                 CONTACTO
               </a>
             </div>
-          </div>
-
-          {/* Mobile: imagen debajo del texto */}
-          <div className="mt-8 relative h-72 rounded-2xl overflow-hidden lg:hidden">
-            <Image
-              src="/mate-cta.jpeg"
-              alt="Mate de algarrobo grabado a laser"
-              fill
-              sizes="100vw"
-              className="object-contain object-center"
-            />
           </div>
         </div>
       </section>
