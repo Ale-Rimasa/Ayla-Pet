@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getOrderById, updateOrderStatus } from '@/lib/db/orders'
+import { getTransferInfo } from '@/lib/db/site-settings'
 import { ConfirmacionClient } from './ConfirmacionClient'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +29,10 @@ export default async function ConfirmacionPage({ searchParams }: Props) {
   const orderId = params.orderId ?? params.external_reference
   if (!orderId) redirect('/')
 
-  let order = await getOrderById(orderId)
+  const [order, transferInfo] = await Promise.all([
+    getOrderById(orderId),
+    getTransferInfo(),
+  ])
   if (!order) redirect('/')
 
   // null = transfer manual; 'approved' | 'pending' | 'in_process' | 'rejected' = MP
@@ -37,8 +41,7 @@ export default async function ConfirmacionPage({ searchParams }: Props) {
   // Fallback: if webhook hasn't fired yet, reconcile rejection directly from MP redirect params
   if (mpStatus === 'rejected' && order.status === 'pending') {
     await updateOrderStatus(orderId, 'pending', 'cancelled')
-    order = { ...order, status: 'cancelled' }
   }
 
-  return <ConfirmacionClient order={order} mpStatus={mpStatus} />
+  return <ConfirmacionClient order={order} mpStatus={mpStatus} transferInfo={transferInfo} />
 }

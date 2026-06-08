@@ -7,18 +7,19 @@ import { toast } from 'sonner'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
 import { formatPrice } from '@/lib/utils'
-import { TRANSFER } from '@/lib/constants'
 import { buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { Order } from '@/types'
+import type { TransferInfo } from '@/types/settings'
 
 interface ConfirmacionClientProps {
   order: Order
   /** null = transferencia manual | 'approved' | 'pending' | 'in_process' = MercadoPago */
   mpStatus: string | null
+  transferInfo: TransferInfo
 }
 
-export function ConfirmacionClient({ order, mpStatus }: ConfirmacionClientProps) {
+export function ConfirmacionClient({ order, mpStatus, transferInfo }: ConfirmacionClientProps) {
   const clearCart = useCartStore((s) => s.clearCart)
   const resetCheckout = useCheckoutStore((s) => s.resetCheckout)
 
@@ -78,15 +79,15 @@ export function ConfirmacionClient({ order, mpStatus }: ConfirmacionClientProps)
           <h2 className="mb-4 font-semibold">Datos para la transferencia</h2>
 
           <div className="space-y-3 text-sm">
-            <TransferRow label="CBU" value={TRANSFER.cbu} onCopy={copyToClipboard} />
-            <TransferRow label="Alias" value={TRANSFER.alias} onCopy={copyToClipboard} />
+            <TransferRow label="CBU" value={transferInfo.cbu} onCopy={copyToClipboard} />
+            <TransferRow label="Alias" value={transferInfo.alias} onCopy={copyToClipboard} />
             <div className="flex justify-between">
               <span className="text-muted-foreground">Titular</span>
-              <span className="font-medium">{TRANSFER.titular}</span>
+              <span className="font-medium">{transferInfo.titular}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Banco</span>
-              <span className="font-medium">{TRANSFER.banco}</span>
+              <span className="font-medium">{transferInfo.banco}</span>
             </div>
 
             <Separator className="my-3" />
@@ -103,6 +104,9 @@ export function ConfirmacionClient({ order, mpStatus }: ConfirmacionClientProps)
               #{order.id.slice(0, 8).toUpperCase()}
             </span>{' '}
             como referencia de la transferencia.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Si no deseás realizar la transferencia, por WhatsApp te enviaremos un link de Mercado Pago.
           </p>
         </div>
       )}
