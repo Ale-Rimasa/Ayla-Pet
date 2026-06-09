@@ -15,7 +15,9 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com`,
+      // 'unsafe-eval' only in dev: React Fast Refresh needs it; nothing in prod does
+      // (Checkout Pro is redirect-based — the MP SDK is never embedded)
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://sdk.mercadopago.com`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co",
       "font-src 'self'",

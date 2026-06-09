@@ -14,7 +14,14 @@ export async function checkRateLimit(
     .eq('key', key)
     .gte('created_at', windowStart)
 
-  if (error) return true
+  if (error) {
+    // Fail open: availability over enforcement, but flag it for monitoring
+    console.error('[rate-limit][ALERT] DB unavailable — rate limiting disabled for this request', {
+      key,
+      error: error.message,
+    })
+    return true
+  }
 
   if ((count ?? 0) >= limit) return false
 

@@ -6,6 +6,12 @@ import { verifyMPSignature, processMPWebhook } from '@/lib/webhooks/mercadopago'
 export async function POST(request: NextRequest) {
   const ok200 = () => NextResponse.json({ received: true }, { status: 200 })
 
+  // Without a secret, HMAC-SHA256(manifest, '') is forgeable by anyone — reject everything
+  if (!env.MP_WEBHOOK_SECRET) {
+    console.error('[webhook] MP_WEBHOOK_SECRET not configured — rejecting all webhooks')
+    return NextResponse.json({ error: 'misconfigured' }, { status: 500 })
+  }
+
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   if (!await checkRateLimit(`webhook:${ip}`, 120, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
@@ -25,7 +31,7 @@ export async function POST(request: NextRequest) {
   const urlPaymentId = new URL(request.url).searchParams.get('id') ?? ''
   const paymentId = bodyPaymentId || urlPaymentId
 
-  if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET ?? '')) {
+  if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET)) {
     console.error('[webhook] Signature verification failed', {
       hasSignature: !!xSignature,
       hasRequestId: !!xRequestId,

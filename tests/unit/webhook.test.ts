@@ -69,11 +69,13 @@ vi.mock('@/lib/db/payments', () => ({
   recordMPPayment: mockRecordMPPayment,
 }))
 
+const mockEnvValues: { MP_WEBHOOK_SECRET: string | undefined; MP_ACCESS_TOKEN: string } = {
+  MP_WEBHOOK_SECRET: 'test-webhook-secret',
+  MP_ACCESS_TOKEN: 'TEST-token',
+}
+
 vi.mock('@/env', () => ({
-  env: {
-    MP_WEBHOOK_SECRET: 'test-webhook-secret',
-    MP_ACCESS_TOKEN: 'TEST-token',
-  },
+  env: mockEnvValues,
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -144,6 +146,8 @@ describe('POST /api/webhooks/mercadopago', () => {
     mockUpdateOrderStatus.mockResolvedValue({ ok: true })
     mockRecordMPPayment.mockResolvedValue({ ok: true })
     mockSendOrderConfirmation.mockResolvedValue(undefined)
+
+    mockEnvValues.MP_WEBHOOK_SECRET = 'test-webhook-secret'
   })
 
   it('valid sig + approved → calls decrementStock, updateOrderStatus("paid"), sendOrderConfirmation', async () => {
@@ -191,6 +195,33 @@ describe('POST /api/webhooks/mercadopago', () => {
     expect(mockFetchPayment).not.toHaveBeenCalled()
     expect(mockDecrementStock).not.toHaveBeenCalled()
     expect(mockUpdateOrderStatus).not.toHaveBeenCalled()
+  })
+
+  it('missing MP_WEBHOOK_SECRET → 500, rejects forged HMAC signed with empty key', async () => {
+    mockEnvValues.MP_WEBHOOK_SECRET = undefined
+
+    // Attacker knows the empty-key pattern: HMAC-SHA256(manifest, '')
+    const req = buildValidRequest(PAYMENT_ID, REQUEST_ID, '')
+
+    const { POST } = await import('@/app/api/webhooks/mercadopago/route')
+    const res = await POST(req as any)
+
+    expect(res.status).toBe(500)
+    expect(mockFetchPayment).not.toHaveBeenCalled()
+    expect(mockDecrementStock).not.toHaveBeenCalled()
+    expect(mockUpdateOrderStatus).not.toHaveBeenCalled()
+  })
+
+  it('missing MP_WEBHOOK_SECRET → 500 even for legit-looking requests', async () => {
+    mockEnvValues.MP_WEBHOOK_SECRET = undefined
+
+    const req = buildValidRequest()
+
+    const { POST } = await import('@/app/api/webhooks/mercadopago/route')
+    const res = await POST(req as any)
+
+    expect(res.status).toBe(500)
+    expect(mockFetchPayment).not.toHaveBeenCalled()
   })
 
   it('duplicate payment_id (idempotency) → 200, no-op', async () => {
