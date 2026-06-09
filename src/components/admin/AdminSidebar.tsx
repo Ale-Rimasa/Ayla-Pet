@@ -34,12 +34,12 @@ const activeItems = [
   { label: 'Categorías', href: '/admin/categorias', icon: Tags },
   { label: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
   { label: 'Clientes', href: '/admin/clientes', icon: Users },
-  { label: 'Estadísticas', href: '/admin/estadisticas', icon: BarChart2 },
   { label: 'Embalajes', href: '/admin/embalajes', icon: BoxIcon },
   { label: 'Configuración', href: '/admin/configuracion', icon: Settings },
 ]
 
 const disabledItems = [
+  { label: 'Estadísticas', icon: BarChart2 },
   { label: 'Descuentos', icon: Percent },
 ]
 
