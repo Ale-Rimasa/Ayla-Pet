@@ -2,9 +2,9 @@
 
 **Versión:** 1.0  
 **Estado:** Desarrollo  
-**Última actualización:** Mayo 2026
+**Última actualización:** Junio 2026
 
-Ecommerce para Ayla Pets — insignias y chapas personalizadas grabadas a laser (para mascotas, identificación, regalos, etc.). Panel de administración propio en `/admin/*` con Next.js + Supabase + shadcn/ui.
+Ecommerce para Ayla — insignias y chapas personalizadas grabadas a laser (para mascotas, identificación, regalos, etc.). Panel de administración propio en `/admin/*` con Next.js + Supabase + shadcn/ui.
 
 ---
 
@@ -26,10 +26,12 @@ En el primer mensaje significativo de cada sesión, antes de responder:
 
 Canonical Engram project name for this repository:
 
-**`pet-laser-ecommerce`**
+**`ayla-pet`**
 
 Always use this exact project identifier for memory retrieval and persistence.
 Never use alternate names with spaces or different casing.
+Legacy history (pre 2026-05-11: rebranding, SDD catalogo-publico, sdd-init) lives under
+the old project name `ecommerce pet laser` — search there explicitly if needed.
 
 ---
 
@@ -61,7 +63,7 @@ Para cambios solo de UI, SDD es opcional.
 
 | Dato | Valor |
 |------|-------|
-| Marca | Ayla Pets |
+| Marca | Ayla |
 | Producto | Insignias y chapas grabadas a laser |
 | Moneda | ARS |
 | Tipo de conversión | Híbrido (online + WhatsApp) |
