@@ -570,4 +570,35 @@ describe('getQuoteFromOfficial — retry, timeout y errores', () => {
     const validateCalls = calls.filter((c) => /\/users\/validate/.test(c.url))
     expect(validateCalls).toHaveLength(0)
   }))
+
+  it('un timeout (AbortSignal) en /rates lanza CorreoArgentinoOfficialApiError con code: timeout', withEnv(VALID_ENV, async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      if (/\/token$/.test(url)) {
+        return jsonResponse(TOKEN_RESPONSE)
+      }
+      if (/\/rates$/.test(url)) {
+        const err = new Error('The operation was aborted due to timeout')
+        err.name = 'TimeoutError'
+        throw err
+      }
+      throw new Error(`unexpected URL ${url}`)
+    })
+
+    const { getQuoteFromOfficial, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    await expect(getQuoteFromOfficial(BASE_PARAMS)).rejects.toMatchObject({
+      code: 'timeout',
+    })
+    await expect(getQuoteFromOfficial(BASE_PARAMS)).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+  }))
+
+  it('un shape zod inválido en /token lanza CorreoArgentinoOfficialApiError', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: { expires: '2026-06-10 23:59:59' } }, // sin campo `token`
+      { url: /\/rates$/, body: RATES_RESPONSE_BOTH },
+    ])
+
+    const { getQuoteFromOfficial, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    await expect(getQuoteFromOfficial(BASE_PARAMS)).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+  }))
 })
