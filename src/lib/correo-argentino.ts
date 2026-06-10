@@ -2,15 +2,14 @@
  * Cliente Correo Argentino — adaptador intercambiable por modo.
  *
  * CORREO_ARGENTINO_MODE=mock      → datos simulados (desarrollo sin clave)
- * CORREO_ARGENTINO_MODE=rapidapi  → API RapidAPI brunoaramburu/correo-argentino1
- * CORREO_ARGENTINO_MODE=official  → bloqueado hasta recibir credenciales MiCorreo
+ * CORREO_ARGENTINO_MODE=official  → API oficial MiCorreo v1 (ver correo-argentino-official.ts)
  */
 
 import type { ShippingPackageProfile } from '@/types/shipping'
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
 
-export type CorreoArgentinoMode = 'mock' | 'rapidapi' | 'official'
+export type CorreoArgentinoMode = 'mock' | 'official'
 
 export interface GetCorreoArgentinoQuoteParams {
   destinationCp: string
@@ -21,8 +20,12 @@ export interface GetCorreoArgentinoQuoteParams {
 export interface CorreoArgentinoQuote {
   aSucursalCentavos: number
   aDomicilioCentavos: number
-  rateSource: 'rapidapi' | 'official' | 'mock'
+  rateSource: 'official' | 'mock'
   quotedAt: string
+  aDomicilioDiasMin?: string
+  aDomicilioDiasMax?: string
+  aSucursalDiasMin?: string
+  aSucursalDiasMax?: string
 }
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -31,6 +34,22 @@ export class CorreoArgentinoConfigError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'CorreoArgentinoConfigError'
+  }
+}
+
+/**
+ * Error de la API MiCorreo: respuestas no-2xx, parseo inválido, timeout,
+ * límites excedidos o datos faltantes en la respuesta.
+ */
+export class CorreoArgentinoApiError extends Error {
+  status?: number
+  code?: string
+
+  constructor(message: string, options?: { status?: number; code?: string }) {
+    super(message)
+    this.name = 'CorreoArgentinoApiError'
+    this.status = options?.status
+    this.code = options?.code
   }
 }
 
@@ -43,15 +62,15 @@ function getMode(): CorreoArgentinoMode {
     if (process.env.NODE_ENV === 'production') {
       throw new CorreoArgentinoConfigError(
         'CORREO_ARGENTINO_MODE no está configurado en producción. ' +
-        'Establecer CORREO_ARGENTINO_MODE=mock o rapidapi.'
+        'Establecer CORREO_ARGENTINO_MODE=mock o official.'
       )
     }
     return 'mock'
   }
 
-  if (!['mock', 'rapidapi', 'official'].includes(mode)) {
+  if (!['mock', 'official'].includes(mode)) {
     throw new CorreoArgentinoConfigError(
-      `CORREO_ARGENTINO_MODE inválido: "${mode}". Valores válidos: mock | rapidapi | official`
+      `CORREO_ARGENTINO_MODE inválido: "${mode}". Valores válidos: mock | official`
     )
   }
 
@@ -66,15 +85,8 @@ export async function getCorreoArgentinoQuote(
   const mode = getMode()
 
   if (mode === 'official') {
-    throw new CorreoArgentinoConfigError(
-      'CORREO_ARGENTINO_MODE=official no está implementado. ' +
-      'Pendiente de credenciales MiCorreo. Usar rapidapi o mock.'
-    )
-  }
-
-  if (mode === 'rapidapi') {
-    const { getQuoteFromRapidApi } = await import('@/lib/correo-argentino-rapidapi')
-    return getQuoteFromRapidApi(params)
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    return getQuoteFromOfficial(params)
   }
 
   return getMockQuote()

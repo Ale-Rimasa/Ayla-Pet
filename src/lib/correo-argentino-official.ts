@@ -35,57 +35,29 @@
  */
 
 import { z } from 'zod'
-import type { GetCorreoArgentinoQuoteParams } from '@/lib/correo-argentino'
+import {
+  CorreoArgentinoConfigError,
+  CorreoArgentinoApiError,
+  type GetCorreoArgentinoQuoteParams,
+  type CorreoArgentinoQuote,
+} from '@/lib/correo-argentino'
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
 
 /**
- * Error de configuración: variables de entorno faltantes o inválidas.
- * Se lanza ANTES de cualquier llamada de red.
- */
-export class CorreoArgentinoOfficialConfigError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'CorreoArgentinoOfficialConfigError'
-  }
-}
-
-/**
- * Error de la API MiCorreo: respuestas no-2xx, parseo inválido, timeout,
- * límites excedidos o datos faltantes en la respuesta.
- */
-export class CorreoArgentinoOfficialApiError extends Error {
-  status?: number
-  code?: string
-
-  constructor(message: string, options?: { status?: number; code?: string }) {
-    super(message)
-    this.name = 'CorreoArgentinoOfficialApiError'
-    this.status = options?.status
-    this.code = options?.code
-  }
-}
-
-// ─── Tipos públicos ───────────────────────────────────────────────────────────
-
-/**
- * Resultado de cotización del cliente oficial.
+ * Errores compartidos con el adaptador (`correo-argentino.ts`):
+ *  - `CorreoArgentinoConfigError`: variables de entorno faltantes o inválidas,
+ *    lanzado ANTES de cualquier llamada de red.
+ *  - `CorreoArgentinoApiError`: respuestas no-2xx, parseo inválido, timeout,
+ *    límites excedidos o datos faltantes en la respuesta.
  *
- * NOTA: definido localmente en este módulo (no en `correo-argentino.ts`) porque
- * esta es una PR puramente aditiva — la PR siguiente extenderá
- * `CorreoArgentinoQuote` en `correo-argentino.ts` con estos mismos campos
- * (aDomicilioDiasMin/Max, aSucursalDiasMin/Max) y reemplazará este tipo local
- * por el compartido al cablear el adaptador.
+ * Re-exportados con los nombres `CorreoArgentinoOfficial*` para mantener
+ * compatibilidad con los tests existentes de este módulo — son la MISMA clase,
+ * `instanceof` funciona indistintamente del nombre usado para importar.
  */
-export interface CorreoArgentinoOfficialQuote {
-  aSucursalCentavos: number
-  aDomicilioCentavos: number
-  rateSource: 'official'
-  quotedAt: string
-  aDomicilioDiasMin?: string
-  aDomicilioDiasMax?: string
-  aSucursalDiasMin?: string
-  aSucursalDiasMax?: string
+export {
+  CorreoArgentinoConfigError as CorreoArgentinoOfficialConfigError,
+  CorreoArgentinoApiError as CorreoArgentinoOfficialApiError,
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -105,7 +77,7 @@ const MAX_DIMENSION_CM = 150
 function getRequiredEnv(key: string): string {
   const val = process.env[key]
   if (!val) {
-    throw new CorreoArgentinoOfficialConfigError(
+    throw new CorreoArgentinoConfigError(
       `${key} no está configurado. Requerido para CORREO_ARGENTINO_MODE=official.`
     )
   }
@@ -122,7 +94,7 @@ function getBaseUrl(): string {
 
   if (!baseUrl) {
     if (process.env.NODE_ENV === 'production') {
-      throw new CorreoArgentinoOfficialConfigError(
+      throw new CorreoArgentinoConfigError(
         'MICORREO_BASE_URL no está configurado en producción. ' +
         'Establecer la URL de producción de MiCorreo.'
       )
@@ -204,7 +176,7 @@ async function ensureToken(config: OfficialConfig, force = false): Promise<strin
 
   if (!response.ok) {
     const errorBody = await safeReadJson(response)
-    throw new CorreoArgentinoOfficialApiError(
+    throw new CorreoArgentinoApiError(
       buildApiErrorMessage('No se pudo obtener token de MiCorreo', response.status, errorBody),
       { status: response.status, code: extractErrorCode(errorBody) }
     )
@@ -213,7 +185,7 @@ async function ensureToken(config: OfficialConfig, force = false): Promise<strin
   const json = await response.json()
   const parsed = tokenResponseSchema.safeParse(json)
   if (!parsed.success) {
-    throw new CorreoArgentinoOfficialApiError('Respuesta inválida de POST /token (schema)')
+    throw new CorreoArgentinoApiError('Respuesta inválida de POST /token (schema)')
   }
 
   tokenCache = { token: parsed.data.token, fetchedAt: Date.now() }
@@ -264,7 +236,7 @@ async function fetchWithRetry(url: string, init: RequestInit): Promise<Response>
       response = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
     } catch (err) {
       if (err instanceof Error && err.name === 'TimeoutError') {
-        throw new CorreoArgentinoOfficialApiError('Timeout al contactar MiCorreo', { code: 'timeout' })
+        throw new CorreoArgentinoApiError('Timeout al contactar MiCorreo', { code: 'timeout' })
       }
       throw err
     }
@@ -324,7 +296,7 @@ function buildRatesRequest(
   const lengthCm = mmToCmCeil(largest.lengthMm)
 
   if (totalWeightG > MAX_WEIGHT_G) {
-    throw new CorreoArgentinoOfficialApiError(
+    throw new CorreoArgentinoApiError(
       `El peso consolidado (${totalWeightG}g) supera el máximo permitido (${MAX_WEIGHT_G}g)`,
       { code: 'limit_exceeded' }
     )
@@ -332,7 +304,7 @@ function buildRatesRequest(
 
   for (const [name, value] of [['height', heightCm], ['width', widthCm], ['length', lengthCm]] as const) {
     if (value > MAX_DIMENSION_CM) {
-      throw new CorreoArgentinoOfficialApiError(
+      throw new CorreoArgentinoApiError(
         `La dimensión ${name} consolidada (${value}cm) supera el máximo permitido (${MAX_DIMENSION_CM}cm)`,
         { code: 'limit_exceeded' }
       )
@@ -380,7 +352,7 @@ async function fetchRates(config: OfficialConfig, body: RatesRequestBody): Promi
 
     if (response.status === 401) {
       const errorBody = await safeReadJson(response)
-      throw new CorreoArgentinoOfficialApiError(
+      throw new CorreoArgentinoApiError(
         buildApiErrorMessage('No autorizado en /rates tras reintento', 401, errorBody),
         { status: 401, code: extractErrorCode(errorBody) }
       )
@@ -391,13 +363,13 @@ async function fetchRates(config: OfficialConfig, body: RatesRequestBody): Promi
     const errorBody = await safeReadJson(response)
 
     if (response.status === 429) {
-      throw new CorreoArgentinoOfficialApiError(
+      throw new CorreoArgentinoApiError(
         buildApiErrorMessage('MiCorreo /rates rate-limited (429)', 429, errorBody),
         { status: 429, code: 'rate_limited' }
       )
     }
 
-    throw new CorreoArgentinoOfficialApiError(
+    throw new CorreoArgentinoApiError(
       buildApiErrorMessage('Error de MiCorreo /rates', response.status, errorBody),
       { status: response.status, code: extractErrorCode(errorBody) }
     )
@@ -412,10 +384,10 @@ function pesosToCentavos(pesos: number): number {
   return Math.round(pesos * 100)
 }
 
-function mapRatesResponse(json: unknown): CorreoArgentinoOfficialQuote {
+function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
   const parsed = ratesResponseSchema.safeParse(json)
   if (!parsed.success) {
-    throw new CorreoArgentinoOfficialApiError('Respuesta inválida de POST /rates (schema)')
+    throw new CorreoArgentinoApiError('Respuesta inválida de POST /rates (schema)')
   }
 
   const { rates } = parsed.data
@@ -424,7 +396,7 @@ function mapRatesResponse(json: unknown): CorreoArgentinoOfficialQuote {
   const sucursalEntries = rates.filter((r) => r.deliveredType === 'S')
 
   if (domicilioEntries.length === 0 || sucursalEntries.length === 0) {
-    throw new CorreoArgentinoOfficialApiError(
+    throw new CorreoArgentinoApiError(
       'La respuesta de /rates no incluye ambos tipos de entrega (D y S)',
       { code: 'missing_delivered_type' }
     )
@@ -456,7 +428,7 @@ function mapRatesResponse(json: unknown): CorreoArgentinoOfficialQuote {
 
 export async function getQuoteFromOfficial(
   params: GetCorreoArgentinoQuoteParams
-): Promise<CorreoArgentinoOfficialQuote> {
+): Promise<CorreoArgentinoQuote> {
   const config = getConfig()
 
   const requestBody = buildRatesRequest(config, params)

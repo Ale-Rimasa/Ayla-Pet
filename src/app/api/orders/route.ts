@@ -18,7 +18,7 @@ function isAndreaniEnabled(): boolean {
 function isShippingQuoteAvailable(method: string): boolean {
   if (method === 'andreani-domicilio') return isAndreaniEnabled()
   const correoMode = process.env.CORREO_ARGENTINO_MODE ?? 'mock'
-  return correoMode === 'rapidapi' || correoMode === 'official'
+  return correoMode === 'official'
 }
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────

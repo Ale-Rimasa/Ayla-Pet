@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -118,7 +118,14 @@ describe('POST /api/orders — engravingText bodySchema validation', () => {
 })
 
 describe('POST /api/orders — correo-argentino-domicilio', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Sin esto el route saltea la cotización (modo default 'mock' en
+    // isShippingQuoteAvailable) y getCorreoArgentinoQuote nunca se llama.
+    vi.stubEnv('CORREO_ARGENTINO_MODE', 'official')
+  })
+
+  afterEach(() => { vi.unstubAllEnvs() })
 
   it('llama getCorreoArgentinoQuote (no getShippingQuote) cuando shippingMethod=correo-argentino-domicilio', async () => {
     const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
