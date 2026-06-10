@@ -94,7 +94,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<GetPro
 
   let query = supabase
     .from('products')
-    .select('*, images:product_images(*)', { count: 'exact' })
+    .select('*, variants:product_variants(*), images:product_images(*)', { count: 'exact' })
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -118,8 +118,11 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<GetPro
   const { data, count } = await query
   return {
     data: (data ?? []).map((row) => {
-      const { images: rawImages, ...productRow } = row as ProductRow & { images: ProductImageRow[] }
-      return mapProduct(productRow, [], rawImages ?? [])
+      const { variants: rawVariants, images: rawImages, ...productRow } = row as ProductRow & {
+        variants: VariantRow[]
+        images: ProductImageRow[]
+      }
+      return mapProduct(productRow, rawVariants ?? [], rawImages ?? [])
     }),
     count: count ?? 0,
     page,
