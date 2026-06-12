@@ -384,6 +384,25 @@ function pesosToCentavos(pesos: number): number {
   return Math.round(pesos * 100)
 }
 
+// Tarifa pineada: 'CP' = Paquete Clásico. MiCorreo puede devolver más de una
+// tarifa por deliveredType (Clásico + Expreso); siempre cotizamos la Clásica
+// en vez de depender del orden del array.
+const PINNED_PRODUCT_TYPE = 'CP'
+
+type RateEntry = z.infer<typeof rateEntrySchema>
+
+function pickRate(entries: RateEntry[], deliveredType: string): RateEntry {
+  if (entries.length === 1) return entries[0]
+
+  const pinned = entries.find((r) => r.productType === PINNED_PRODUCT_TYPE)
+  if (pinned) return pinned
+
+  console.warn(
+    `[MICORREO] /rates devolvió ${entries.length} entradas con deliveredType=${deliveredType} y ninguna es Clásico (${PINNED_PRODUCT_TYPE}) — se usa la primera`
+  )
+  return entries[0]
+}
+
 function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
   const parsed = ratesResponseSchema.safeParse(json)
   if (!parsed.success) {
@@ -402,15 +421,8 @@ function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
     )
   }
 
-  if (domicilioEntries.length > 1) {
-    console.warn('[MICORREO] /rates devolvió más de una entrada con deliveredType=D — se usa la primera')
-  }
-  if (sucursalEntries.length > 1) {
-    console.warn('[MICORREO] /rates devolvió más de una entrada con deliveredType=S — se usa la primera')
-  }
-
-  const domicilio = domicilioEntries[0]
-  const sucursal = sucursalEntries[0]
+  const domicilio = pickRate(domicilioEntries, 'D')
+  const sucursal = pickRate(sucursalEntries, 'S')
 
   return {
     aDomicilioCentavos: pesosToCentavos(domicilio.price),

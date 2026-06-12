@@ -423,7 +423,7 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     expect(result.aSucursalDiasMax).toBe('3')
   }))
 
-  it('si hay más de una entrada por deliveredType, toma la primera y emite console.warn', withEnv(VALID_ENV, async () => {
+  it('con múltiples entradas por deliveredType y ninguna Clásico (CP), toma la primera y emite console.warn', withEnv(VALID_ENV, async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     mockFetchSequence([
@@ -442,6 +442,32 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
 
     expect(result.aDomicilioCentavos).toBe(10000) // primera entrada D (price: 100)
     expect(warnSpy).toHaveBeenCalled()
+  }))
+
+  it('con múltiples entradas por deliveredType, prefiere la tarifa Clásico (productType CP) aunque no sea la primera, sin warning', withEnv(VALID_ENV, async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/rates$/, body: {
+        rates: [
+          // Expreso primero a propósito: el orden del array NO debe determinar la tarifa
+          { deliveredType: 'D', productType: 'EP', productName: 'Paquete Expreso', price: 250, deliveryTimeMin: '1', deliveryTimeMax: '2' },
+          { deliveredType: 'D', productType: 'CP', productName: 'Paquete Clásico', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'S', productType: 'EP', productName: 'Paquete Expreso', price: 180, deliveryTimeMin: '1', deliveryTimeMax: '2' },
+          { deliveredType: 'S', productType: 'CP', productName: 'Paquete Clásico', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+        ],
+      } },
+    ])
+
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.aDomicilioCentavos).toBe(10000) // CP, no la primera (EP)
+    expect(result.aSucursalCentavos).toBe(8000)
+    expect(result.aDomicilioDiasMin).toBe('2')
+    expect(result.aDomicilioDiasMax).toBe('5')
+    expect(warnSpy).not.toHaveBeenCalled()
   }))
 })
 
