@@ -41,7 +41,8 @@ interface CorreoArgentinoQuote {
 
 interface AndreaniQuote {
   price: number
-  estimatedDays: number
+  // La API ya incluye la unidad, ej: "3–7 días hábiles"
+  estimatedDays: string
   quotedAt: string
 }
 
@@ -223,7 +224,7 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
                   <span className="text-muted-foreground">
                     Envío a domicilio
                     <span className="block text-xs">
-                      {result.andreani.estimatedDays} días hábiles
+                      {result.andreani.estimatedDays}
                     </span>
                   </span>
                   <PriceDisplay centavos={result.andreani.price} size="sm" />
