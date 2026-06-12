@@ -89,7 +89,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
           {/* Acordeones informativos */}
           <div className="space-y-2">
-            <ShippingQuoteAccordion />
+            <ShippingQuoteAccordion variantId={selectedVariant?.id ?? null} />
             <PaymentMethodsAccordion />
           </div>
         </div>

@@ -1,0 +1,171 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { ShippingQuoteAccordion } from '@/components/product/ShippingQuoteAccordion'
+import { formatPrice } from '@/lib/utils'
+
+const VARIANT_ID = '123e4567-e89b-12d3-a456-426614174000'
+
+// Normaliza espacios (incluido NBSP) para comparar con el texto renderizado por getByText
+const normalizeSpaces = (s: string) => s.replace(/\s/g, ' ')
+
+function openAccordion() {
+  const trigger = screen.getByRole('button', { name: /medios de envío/i })
+  fireEvent.click(trigger)
+}
+
+function fillCp(value: string) {
+  const cpInput = screen.getByLabelText(/código postal/i)
+  fireEvent.change(cpInput, { target: { value } })
+}
+
+function submitForm() {
+  const submitButton = screen.getByRole('button', { name: /cotizar/i })
+  fireEvent.click(submitButton)
+}
+
+beforeEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('ShippingQuoteAccordion', () => {
+  it('renderiza el formulario de cotización cuando hay variantId', () => {
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    expect(screen.getByLabelText(/código postal/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /cotizar/i })).toBeInTheDocument()
+  })
+
+  it('no renderiza el formulario cuando variantId es null', () => {
+    render(<ShippingQuoteAccordion variantId={null} />)
+    openAccordion()
+
+    expect(screen.queryByLabelText(/código postal/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/elegí una variante/i)).toBeInTheDocument()
+  })
+
+  it('valida el CP en el cliente y no llama a fetch si es inválido', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('12') // menos de 4 dígitos
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(/código postal válido/i)
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('llama a fetch con el body correcto al cotizar', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        correoArgentino: {
+          aDomicilioCentavos: 620100,
+          aSucursalCentavos: 368600,
+          rateSource: 'official',
+          quotedAt: new Date().toISOString(),
+          aDomicilioDiasMin: '2',
+          aDomicilioDiasMax: '5',
+        },
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    submitForm()
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/shipping/quote')
+    expect(options.method).toBe('POST')
+
+    const body = JSON.parse(options.body)
+    expect(body).toEqual({
+      cp: '1425',
+      items: [{ variantId: VARIANT_ID, quantity: 1 }],
+    })
+  })
+
+  it('muestra los precios a domicilio y a sucursal con una respuesta 200 mockeada', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        correoArgentino: {
+          aDomicilioCentavos: 620100,
+          aSucursalCentavos: 368600,
+          rateSource: 'official',
+          quotedAt: new Date().toISOString(),
+          aDomicilioDiasMin: '2',
+          aDomicilioDiasMax: '5',
+        },
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getByText('A domicilio')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('A sucursal')).toBeInTheDocument()
+    expect(screen.getByText('2–5 días hábiles')).toBeInTheDocument()
+    expect(screen.getByText(normalizeSpaces(formatPrice(620100)))).toBeInTheDocument()
+    expect(screen.getByText(normalizeSpaces(formatPrice(368600)))).toBeInTheDocument()
+  })
+
+  it('muestra un mensaje de error amigable cuando la API responde 422', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: 'shipping_unresolvable' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('No pudimos calcular el envío para este producto')
+    })
+  })
+
+  it('muestra un mensaje de error amigable cuando la API responde 429', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'Too many requests' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Demasiadas consultas, esperá un momento')
+    })
+  })
+})
