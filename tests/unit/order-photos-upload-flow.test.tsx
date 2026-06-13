@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { Order } from '@/types'
+import type { TransferInfo } from '@/types/settings'
 
 vi.mock('@/store/cart.store', () => ({
   useCartStore: (selector: any) => selector({ clearCart: vi.fn() }),
@@ -31,6 +32,13 @@ const PENDING_ORDER: Order = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
 
+const TRANSFER_INFO: TransferInfo = {
+  cbu: '0000003100010000000001',
+  alias: 'ayla.pets',
+  titular: 'Ayla Pets',
+  banco: 'Mercado Pago',
+}
+
 describe('ConfirmacionClient — bank transfer flow', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -38,7 +46,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('CTA "Subir mis fotos" is present and points to /mi-pedido/<id>/fotos', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} transferInfo={TRANSFER_INFO} />)
 
     const ctaLink = screen.getByRole('link', { name: /subir mis fotos/i })
     expect(ctaLink).toBeDefined()
@@ -47,7 +55,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('shows bank transfer data (CBU and Alias rows)', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} transferInfo={TRANSFER_INFO} />)
 
     expect(screen.getByText('CBU')).toBeDefined()
     expect(screen.getByText('Alias')).toBeDefined()
@@ -55,7 +63,7 @@ describe('ConfirmacionClient — bank transfer flow', () => {
 
   it('shows the order number in the page', async () => {
     const { ConfirmacionClient } = await import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient')
-    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} />)
+    render(<ConfirmacionClient order={PENDING_ORDER} mpStatus={null} transferInfo={TRANSFER_INFO} />)
 
     const shortId = PENDING_ORDER.id.slice(0, 8).toUpperCase()
     expect(screen.getAllByText(new RegExp(shortId)).length).toBeGreaterThan(0)

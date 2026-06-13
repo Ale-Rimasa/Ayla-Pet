@@ -1,6 +1,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { Order } from '@/types'
+import type { TransferInfo } from '@/types/settings'
 
 vi.mock('@/components/ui/button', () => ({
   buttonVariants: () => 'btn',
@@ -65,6 +66,13 @@ function makeOrder(status: 'pending' | 'paid'): Order {
   }
 }
 
+const TRANSFER_INFO: TransferInfo = {
+  cbu: '0000003100010000000001',
+  alias: 'ayla.pets',
+  titular: 'Ayla Pets',
+  banco: 'Mercado Pago',
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 let ConfirmacionClient: (typeof import('@/app/(storefront)/checkout/confirmacion/ConfirmacionClient'))['ConfirmacionClient']
@@ -77,57 +85,57 @@ beforeEach(async () => {
 
 describe('ConfirmacionClient — transferencia manual (mpStatus=null)', () => {
   it('renders "¡Pedido recibido!"', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
   })
 
   it('shows the order number', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     const shortId = ORDER_UUID.slice(0, 8).toUpperCase()
     expect(screen.getAllByText(new RegExp(shortId)).length).toBeGreaterThan(0)
   })
 
   it('shows bank transfer data section', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('Datos para la transferencia')).toBeInTheDocument()
     expect(screen.getByText('CBU')).toBeInTheDocument()
     expect(screen.getByText('Alias')).toBeInTheDocument()
   })
 
   it('CTA "Subir mis fotos" links to /mi-pedido/<id>/fotos', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     const link = screen.getByRole('link', { name: /subir mis fotos/i })
     expect(link.getAttribute('href')).toBe(`/mi-pedido/${ORDER_UUID}/fotos`)
   })
 
   it('renders the same UI regardless of order.status', () => {
-    const { unmount } = render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} />)
+    const { unmount } = render(<ConfirmacionClient order={makeOrder('pending')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
     unmount()
 
-    render(<ConfirmacionClient order={makeOrder('paid')} mpStatus={null} />)
+    render(<ConfirmacionClient order={makeOrder('paid')} mpStatus={null} transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('¡Pedido recibido!')).toBeInTheDocument()
   })
 })
 
 describe('ConfirmacionClient — MercadoPago aprobado (mpStatus="approved")', () => {
   it('renders "¡Pago aprobado!"', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('¡Pago aprobado!')).toBeInTheDocument()
   })
 
   it('does NOT show bank transfer data', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" transferInfo={TRANSFER_INFO} />)
     expect(screen.queryByText('Datos para la transferencia')).not.toBeInTheDocument()
   })
 
   it('shows CheckCircle icon', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByTestId('check-circle')).toBeInTheDocument()
   })
 
   it('CTA "Subir mis fotos" links to /mi-pedido/<id>/fotos', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="approved" transferInfo={TRANSFER_INFO} />)
     const link = screen.getByRole('link', { name: /subir mis fotos/i })
     expect(link.getAttribute('href')).toBe(`/mi-pedido/${ORDER_UUID}/fotos`)
   })
@@ -135,50 +143,50 @@ describe('ConfirmacionClient — MercadoPago aprobado (mpStatus="approved")', ()
 
 describe('ConfirmacionClient — MercadoPago pendiente (mpStatus="pending")', () => {
   it('renders "Pago en proceso"', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('Pago en proceso')).toBeInTheDocument()
   })
 
   it('renders "Pago en proceso" for in_process status', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="in_process" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="in_process" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('Pago en proceso')).toBeInTheDocument()
   })
 
   it('shows Clock icon', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByTestId('clock-icon')).toBeInTheDocument()
   })
 
   it('does NOT show bank transfer data', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="pending" transferInfo={TRANSFER_INFO} />)
     expect(screen.queryByText('Datos para la transferencia')).not.toBeInTheDocument()
   })
 })
 
 describe('ConfirmacionClient — MercadoPago rechazado (mpStatus="rejected")', () => {
   it('renders "Pago rechazado"', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByText('Pago rechazado')).toBeInTheDocument()
   })
 
   it('shows XCircle icon', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" transferInfo={TRANSFER_INFO} />)
     expect(screen.getByTestId('x-circle-icon')).toBeInTheDocument()
   })
 
   it('shows "Reintentar pago" CTA linking to /checkout', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" transferInfo={TRANSFER_INFO} />)
     const link = screen.getByRole('link', { name: /reintentar pago/i })
     expect(link.getAttribute('href')).toBe('/checkout')
   })
 
   it('does NOT show order summary', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" transferInfo={TRANSFER_INFO} />)
     expect(screen.queryByText('Resumen del pedido')).not.toBeInTheDocument()
   })
 
   it('does NOT show bank transfer data', () => {
-    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" />)
+    render(<ConfirmacionClient order={makeOrder('pending')} mpStatus="rejected" transferInfo={TRANSFER_INFO} />)
     expect(screen.queryByText('Datos para la transferencia')).not.toBeInTheDocument()
   })
 })
