@@ -36,12 +36,32 @@ const VARIANT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
 
 const QUOTE_RESPONSE = {
   correoArgentino: {
-    aDomicilioCentavos: 620100,
-    aSucursalCentavos: 368600,
-    aDomicilioDiasMin: '2',
-    aDomicilioDiasMax: '5',
-    aSucursalDiasMin: '1',
-    aSucursalDiasMax: '3',
+    domicilio: {
+      clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
+      expreso: { priceCentavos: 950000, diasMin: '1', diasMax: '2' },
+    },
+    sucursal: {
+      clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
+      expreso: { priceCentavos: 700000, diasMin: '1', diasMax: '2' },
+    },
+    rateSource: 'mock',
+    quotedAt: '',
+  },
+}
+
+// Variante con Expreso no disponible en ninguna zona (solo Clásico)
+const QUOTE_RESPONSE_SOLO_CLASICO = {
+  correoArgentino: {
+    domicilio: {
+      clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
+      expreso: null,
+    },
+    sucursal: {
+      clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
+      expreso: null,
+    },
+    rateSource: 'mock',
+    quotedAt: '',
   },
 }
 
@@ -129,13 +149,13 @@ describe('CheckoutForm — método de envío y total', () => {
 
     fillAddress()
 
-    // Domicilio es el default: 5000,00 + 6201,00 = 11201,00
+    // Domicilio Clásico es el default: 5000,00 + 6201,00 = 11201,00
     await waitFor(() => {
       expect(screen.getByText(normalizeSpaces('$ 11.201'))).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    // Cambio a sucursal: 5000,00 + 3686,00 = 8686,00
-    fireEvent.click(screen.getByLabelText(/a sucursal/i))
+    // Cambio a sucursal Clásico: 5000,00 + 3686,00 = 8686,00
+    fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
     await waitFor(() => {
       expect(screen.getByText(normalizeSpaces('$ 8.686'))).toBeInTheDocument()
     })
@@ -161,7 +181,7 @@ describe('CheckoutForm — método de envío y total', () => {
       expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
     }, { timeout: 3000 })
 
-    fireEvent.click(screen.getByLabelText(/a sucursal/i))
+    fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
     fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
 
     await waitFor(() => {
@@ -171,7 +191,94 @@ describe('CheckoutForm — método de envío y total', () => {
     const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
     const body = JSON.parse((orderCall[1] as RequestInit).body as string)
     expect(body.shippingMethod).toBe('correo-argentino-sucursal')
+    expect(body.productType).toBe('CP')
     expect(body.clientShippingCost).toBe(368600)
+  })
+
+  it('renderiza 4 opciones de envío cuando las 4 combinaciones están disponibles', async () => {
+    mockFetch({})
+    render(<CheckoutForm />)
+
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/correo argentino a sucursal — expreso/i)).toBeInTheDocument()
+  })
+
+  it('oculta Expreso cuando la cotización no lo incluye para ninguna zona', async () => {
+    mockFetch({ quote: { status: 200, body: QUOTE_RESPONSE_SOLO_CLASICO } })
+    render(<CheckoutForm />)
+
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
+    expect(screen.queryByText(/expreso/i)).not.toBeInTheDocument()
+  })
+
+  it('seleccionar Domicilio Expreso actualiza el Total a subtotal + domicilio.expreso', async () => {
+    mockFetch({})
+    render(<CheckoutForm />)
+
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
+
+    // 5000,00 (subtotal) + 9500,00 (domicilio.expreso) = 14500,00
+    await waitFor(() => {
+      expect(screen.getByText(normalizeSpaces('$ 14.500'))).toBeInTheDocument()
+    })
+  })
+
+  it('al confirmar con Domicilio Expreso seleccionado, envía shippingMethod=domicilio y productType=EP', async () => {
+    const fetchMock = mockFetch({})
+    vi.stubGlobal('open', vi.fn())
+    render(<CheckoutForm />)
+
+    fillCustomer()
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
+    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
+    }, { timeout: 3000 })
+
+    const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
+    const body = JSON.parse((orderCall[1] as RequestInit).body as string)
+    expect(body.shippingMethod).toBe('correo-argentino-domicilio')
+    expect(body.productType).toBe('EP')
+    expect(body.clientShippingCost).toBe(950000)
+  })
+
+  it('la opción seleccionada por default es Domicilio Clásico', async () => {
+    mockFetch({})
+    render(<CheckoutForm />)
+
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeChecked()
   })
 
   it('ante un 409 shipping_price_changed re-cotiza y pide reconfirmar sin crear pedido', async () => {

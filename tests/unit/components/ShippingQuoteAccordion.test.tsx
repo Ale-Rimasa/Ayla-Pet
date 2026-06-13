@@ -95,12 +95,16 @@ describe('ShippingQuoteAccordion', () => {
       status: 200,
       json: async () => ({
         correoArgentino: {
-          aDomicilioCentavos: 620100,
-          aSucursalCentavos: 368600,
+          domicilio: {
+            clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
+            expreso: null,
+          },
+          sucursal: {
+            clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
+            expreso: null,
+          },
           rateSource: 'official',
           quotedAt: new Date().toISOString(),
-          aDomicilioDiasMin: '2',
-          aDomicilioDiasMax: '5',
         },
       }),
     })
@@ -145,18 +149,22 @@ describe('ShippingQuoteAccordion', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('muestra los precios a domicilio y a sucursal con una respuesta 200 mockeada', async () => {
+  it('muestra Clásico para domicilio y sucursal con una respuesta 200 mockeada (solo Clásico)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
         correoArgentino: {
-          aDomicilioCentavos: 620100,
-          aSucursalCentavos: 368600,
+          domicilio: {
+            clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
+            expreso: null,
+          },
+          sucursal: {
+            clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
+            expreso: null,
+          },
           rateSource: 'official',
           quotedAt: new Date().toISOString(),
-          aDomicilioDiasMin: '2',
-          aDomicilioDiasMax: '5',
         },
       }),
     })
@@ -170,13 +178,55 @@ describe('ShippingQuoteAccordion', () => {
     submitForm()
 
     await waitFor(() => {
-      expect(screen.getByText('A domicilio')).toBeInTheDocument()
+      expect(screen.getAllByText('Clásico').length).toBe(2)
     })
 
+    expect(screen.getByText('A domicilio')).toBeInTheDocument()
     expect(screen.getByText('A sucursal')).toBeInTheDocument()
     expect(screen.getByText('2–5 días hábiles')).toBeInTheDocument()
+    expect(screen.getByText('1–3 días hábiles')).toBeInTheDocument()
     expect(screen.getByText(normalizeSpaces(formatPrice(620100)))).toBeInTheDocument()
     expect(screen.getByText(normalizeSpaces(formatPrice(368600)))).toBeInTheDocument()
+    expect(screen.queryByText('Expreso')).not.toBeInTheDocument()
+  })
+
+  it('muestra Clásico y Expreso por grupo cuando ambas velocidades están disponibles', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        correoArgentino: {
+          domicilio: {
+            clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
+            expreso: { priceCentavos: 950000, diasMin: '1', diasMax: '2' },
+          },
+          sucursal: {
+            clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
+            expreso: { priceCentavos: 700000, diasMin: '1', diasMax: '2' },
+          },
+          rateSource: 'official',
+          quotedAt: new Date().toISOString(),
+        },
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    selectProvincia('AR-B')
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Clásico').length).toBe(2)
+    })
+
+    expect(screen.getAllByText('Expreso').length).toBe(2)
+    expect(screen.getByText(normalizeSpaces(formatPrice(620100)))).toBeInTheDocument()
+    expect(screen.getByText(normalizeSpaces(formatPrice(950000)))).toBeInTheDocument()
+    expect(screen.getByText(normalizeSpaces(formatPrice(368600)))).toBeInTheDocument()
+    expect(screen.getByText(normalizeSpaces(formatPrice(700000)))).toBeInTheDocument()
   })
 
   it('muestra un mensaje de error amigable cuando la API responde 422', async () => {

@@ -13,6 +13,7 @@ import { CheckoutSchema } from '@/lib/validations'
 import type { CheckoutFormValues } from '@/lib/validations'
 import { formatPrice } from '@/lib/utils'
 import { AR_PROVINCES_LIST } from '@/lib/constants'
+import type { CorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { uploadOrderReferencePhoto } from '@/lib/actions/order-photos'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,18 +33,46 @@ const WA_NUMBER = '5491125412608'
 const CP_REGEX = /^\d{4,8}$/
 const QUOTE_DEBOUNCE_MS = 600
 
-interface CorreoArgentinoQuote {
-  aDomicilioCentavos: number
-  aSucursalCentavos: number
-  aDomicilioDiasMin?: string
-  aDomicilioDiasMax?: string
-  aSucursalDiasMin?: string
-  aSucursalDiasMax?: string
-}
-
 const SHIPPING_LABELS: Record<string, string> = {
   'correo-argentino-domicilio': 'Correo Argentino a domicilio',
   'correo-argentino-sucursal': 'Correo Argentino a sucursal',
+}
+
+// ── Selección combinada de envío (grupo de entrega × velocidad) ───────────────
+
+type ShippingGroup = 'domicilio' | 'sucursal'
+type ShippingSpeed = 'clasico' | 'expreso'
+type ShippingSelection = `${ShippingGroup}:${ShippingSpeed}`
+
+const SHIPPING_SELECTION_OPTIONS: {
+  value: ShippingSelection
+  group: ShippingGroup
+  speed: ShippingSpeed
+  label: string
+}[] = [
+  { value: 'domicilio:clasico', group: 'domicilio', speed: 'clasico', label: 'Correo Argentino a domicilio — Clásico' },
+  { value: 'domicilio:expreso', group: 'domicilio', speed: 'expreso', label: 'Correo Argentino a domicilio — Expreso' },
+  { value: 'sucursal:clasico', group: 'sucursal', speed: 'clasico', label: 'Correo Argentino a sucursal — Clásico' },
+  { value: 'sucursal:expreso', group: 'sucursal', speed: 'expreso', label: 'Correo Argentino a sucursal — Expreso' },
+]
+
+const SHIPPING_METHOD_BY_GROUP: Record<ShippingGroup, CheckoutFormValues['shippingMethod']> = {
+  domicilio: 'correo-argentino-domicilio',
+  sucursal: 'correo-argentino-sucursal',
+}
+
+const PRODUCT_TYPE_BY_SPEED: Record<ShippingSpeed, 'CP' | 'EP'> = {
+  clasico: 'CP',
+  expreso: 'EP',
+}
+
+/** Primera combinación presente en `quote`, en orden de preferencia (domicilio.clasico primero). */
+function firstAvailableSelection(quote: CorreoArgentinoQuote | null): ShippingSelection | null {
+  if (!quote) return null
+  for (const option of SHIPPING_SELECTION_OPTIONS) {
+    if (quote[option.group][option.speed] !== null) return option.value
+  }
+  return null
 }
 
 const MAX_PHOTOS = 3
@@ -140,6 +169,10 @@ export function CheckoutForm() {
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
+  // Combinación (grupo de entrega × velocidad) elegida por el usuario.
+  // Default: primera combinación presente, preferencia domicilio.clasico.
+  const [shippingSelection, setShippingSelection] = useState<ShippingSelection>('domicilio:clasico')
+
   // Photo state — held outside RHF (File is not serializable/SSR-safe for Zod)
   const [photos, setPhotos] = useState<PhotoPreview[]>([])
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -152,6 +185,7 @@ export function CheckoutForm() {
     trigger,
     getValues,
     watch,
+    setValue,
     control,
     formState: { errors },
   } = useForm<CheckoutFormValues>({
@@ -169,14 +203,30 @@ export function CheckoutForm() {
   const engravingText = watch('engravingText')
   const postalCode = watch('shippingAddress.postalCode')
   const province = watch('shippingAddress.province')
-  const shippingMethod = watch('shippingMethod')
 
   const subtotal = totalPrice()
-  const selectedShippingCost = quote
-    ? shippingMethod === 'correo-argentino-sucursal'
-      ? quote.aSucursalCentavos
-      : quote.aDomicilioCentavos
-    : undefined
+
+  const [selectedGroup, selectedSpeed] = shippingSelection.split(':') as [ShippingGroup, ShippingSpeed]
+  const selectedShippingMethod = SHIPPING_METHOD_BY_GROUP[selectedGroup]
+  const selectedProductType = PRODUCT_TYPE_BY_SPEED[selectedSpeed]
+  const selectedRate = quote?.[selectedGroup]?.[selectedSpeed] ?? null
+  const selectedShippingCost = selectedRate?.priceCentavos
+
+  // Mantener shippingMethod de RHF sincronizado con la selección combinada
+  // (CheckoutSchema valida shippingMethod).
+  useEffect(() => {
+    setValue('shippingMethod', selectedShippingMethod)
+  }, [selectedShippingMethod, setValue])
+
+  // Si tras (re)cotizar la combinación elegida quedó null, resetear a la
+  // primera combinación presente.
+  useEffect(() => {
+    if (!quote) return
+    if (quote[selectedGroup][selectedSpeed] !== null) return
+
+    const fallback = firstAvailableSelection(quote)
+    if (fallback) setShippingSelection(fallback)
+  }, [quote, selectedGroup, selectedSpeed])
 
   // ── Cotización de envío ────────────────────────────────────────────────────
 
@@ -301,6 +351,7 @@ export function CheckoutForm() {
           shipping: data.shippingAddress,
           items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
           shippingMethod: data.shippingMethod,
+          productType: selectedProductType,
           ...(selectedShippingCost !== undefined ? { clientShippingCost: selectedShippingCost } : {}),
           observations: data.observations,
           engravingText: data.engravingText || undefined,
@@ -470,58 +521,44 @@ export function CheckoutForm() {
               <p className="text-sm text-amber-700" role="alert">{quoteError}</p>
             )}
 
-            <div className="mt-2 space-y-3">
-              <label
-                htmlFor="shipping-domicilio"
-                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-              >
-                <span className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    id="shipping-domicilio"
-                    value="correo-argentino-domicilio"
-                    {...register('shippingMethod')}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span>
-                    <span className="block text-sm font-medium">Correo Argentino a domicilio</span>
-                    {quote?.aDomicilioDiasMin && quote?.aDomicilioDiasMax && (
-                      <span className="block text-xs text-muted-foreground">
-                        {quote.aDomicilioDiasMin}–{quote.aDomicilioDiasMax} días hábiles
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <span className="text-sm font-semibold">
-                  {quote ? formatPrice(quote.aDomicilioCentavos) : '—'}
-                </span>
-              </label>
+            <div className="mt-2 space-y-3" role="radiogroup" aria-labelledby="shipping-method-heading">
+              {quote && SHIPPING_SELECTION_OPTIONS.map((option) => {
+                const rate = quote[option.group][option.speed]
+                if (!rate) return null
 
-              <label
-                htmlFor="shipping-sucursal"
-                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-              >
-                <span className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    id="shipping-sucursal"
-                    value="correo-argentino-sucursal"
-                    {...register('shippingMethod')}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span>
-                    <span className="block text-sm font-medium">Correo Argentino a sucursal</span>
-                    {quote?.aSucursalDiasMin && quote?.aSucursalDiasMax && (
-                      <span className="block text-xs text-muted-foreground">
-                        {quote.aSucursalDiasMin}–{quote.aSucursalDiasMax} días hábiles
+                const inputId = `shipping-${option.value.replace(':', '-')}`
+
+                return (
+                  <label
+                    key={option.value}
+                    htmlFor={inputId}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  >
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        id={inputId}
+                        name="shipping-selection"
+                        value={option.value}
+                        checked={shippingSelection === option.value}
+                        onChange={() => setShippingSelection(option.value)}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium">{option.label}</span>
+                        {rate.diasMin && rate.diasMax && (
+                          <span className="block text-xs text-muted-foreground">
+                            {rate.diasMin}–{rate.diasMax} días hábiles
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                </span>
-                <span className="text-sm font-semibold">
-                  {quote ? formatPrice(quote.aSucursalCentavos) : '—'}
-                </span>
-              </label>
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {formatPrice(rate.priceCentavos)}
+                    </span>
+                  </label>
+                )
+              })}
             </div>
           </section>
 

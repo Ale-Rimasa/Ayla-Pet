@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { PriceDisplay } from '@/components/shared/PriceDisplay'
 import { AR_PROVINCES_LIST } from '@/lib/constants'
+import type { CorreoArgentinoQuote } from '@/lib/correo-argentino'
 
 // CP argentino: 4–8 dígitos (mismo formato que valida la API)
 const CP_REGEX = /^\d{4,8}$/
@@ -28,20 +29,21 @@ interface ShippingQuoteAccordionProps {
   variantId: string | null
 }
 
-interface CorreoArgentinoQuote {
-  aDomicilioCentavos: number
-  aSucursalCentavos: number
-  rateSource: 'official' | 'mock'
-  quotedAt: string
-  aDomicilioDiasMin?: string
-  aDomicilioDiasMax?: string
-  aSucursalDiasMin?: string
-  aSucursalDiasMax?: string
-}
-
 interface ShippingQuoteResponse {
   correoArgentino?: CorreoArgentinoQuote
 }
+
+// ── Render por grupo de entrega y velocidad ────────────────────────────────────
+
+const SHIPPING_GROUPS: { key: 'domicilio' | 'sucursal'; label: string }[] = [
+  { key: 'domicilio', label: 'A domicilio' },
+  { key: 'sucursal', label: 'A sucursal' },
+]
+
+const SHIPPING_SPEEDS: { key: 'clasico' | 'expreso'; label: string }[] = [
+  { key: 'clasico', label: 'Clásico' },
+  { key: 'expreso', label: 'Expreso' },
+]
 
 export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProps) {
   const [cp, setCp] = useState('')
@@ -187,30 +189,35 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
             )}
 
             {result?.correoArgentino && (
-              <div className="space-y-2 border-t pt-3">
+              <div className="space-y-3 border-t pt-3">
                 <p className="font-medium">Correo Argentino</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    A domicilio
-                    {result.correoArgentino.aDomicilioDiasMin && result.correoArgentino.aDomicilioDiasMax && (
-                      <span className="block text-xs">
-                        {result.correoArgentino.aDomicilioDiasMin}–{result.correoArgentino.aDomicilioDiasMax} días hábiles
-                      </span>
-                    )}
-                  </span>
-                  <PriceDisplay centavos={result.correoArgentino.aDomicilioCentavos} size="sm" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    A sucursal
-                    {result.correoArgentino.aSucursalDiasMin && result.correoArgentino.aSucursalDiasMax && (
-                      <span className="block text-xs">
-                        {result.correoArgentino.aSucursalDiasMin}–{result.correoArgentino.aSucursalDiasMax} días hábiles
-                      </span>
-                    )}
-                  </span>
-                  <PriceDisplay centavos={result.correoArgentino.aSucursalCentavos} size="sm" />
-                </div>
+                {SHIPPING_GROUPS.map((group) => {
+                  const rates = result.correoArgentino![group.key]
+                  const speeds = SHIPPING_SPEEDS.filter((speed) => rates[speed.key] !== null)
+                  if (speeds.length === 0) return null
+
+                  return (
+                    <div key={group.key} className="space-y-1">
+                      <p className="text-muted-foreground">{group.label}</p>
+                      {speeds.map((speed) => {
+                        const rate = rates[speed.key]!
+                        return (
+                          <div key={speed.key} className="flex items-center justify-between pl-2">
+                            <span className="text-muted-foreground">
+                              {speed.label}
+                              {rate.diasMin && rate.diasMax && (
+                                <span className="block text-xs">
+                                  {rate.diasMin}–{rate.diasMax} días hábiles
+                                </span>
+                              )}
+                            </span>
+                            <PriceDisplay centavos={rate.priceCentavos} size="sm" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
               </div>
             )}
 
