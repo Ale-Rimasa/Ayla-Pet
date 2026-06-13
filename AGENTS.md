@@ -45,13 +45,13 @@ Este proyecto debe construirse y mantenerse con estándares de nivel senior, pri
 > Completar por cliente. El resto del archivo es agnóstico al proyecto.
 
 ```
-PROYECTO:          Pet Laser Ecommerce
+PROYECTO:          AYLA
 ENGRAM_PROJECT:    pet-laser-ecommerce
-MARCA:             Pet Laser
+MARCA:             AYLA
 RUBRO:             Grabado láser personalizado para mascotas
 PRODUCTO_PRINCIPAL: Chapitas personalizadas para mascotas
-EQUIPO_LASER:      AlgoLaser Pixi 1064nm
-TIPO_GRABADO:      Grabado láser sobre acero inoxidable / acero quirúrgico / metal compatible
+EQUIPO_LASER:      AlgoLaser MK2 40W
+TIPO_GRABADO:      Grabado láser sobre acero inoxidable / acero quirúrgico / metal compatible / Cuero / Madera
 INSTAGRAM:         Pendiente
 DOMINIO:           Pendiente
 WHATSAPP:          Pendiente - formato internacional sin +, ejemplo 54911XXXXXXXX
