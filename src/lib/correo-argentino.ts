@@ -17,15 +17,22 @@ export interface GetCorreoArgentinoQuoteParams {
   packages: Pick<ShippingPackageProfile, 'weightG' | 'heightMm' | 'widthMm' | 'lengthMm'>[]
 }
 
+export interface RateOption {
+  priceCentavos: number
+  diasMin?: string
+  diasMax?: string
+}
+
+export interface DeliveryRates {
+  clasico: RateOption | null
+  expreso: RateOption | null
+}
+
 export interface CorreoArgentinoQuote {
-  aSucursalCentavos: number
-  aDomicilioCentavos: number
+  domicilio: DeliveryRates
+  sucursal: DeliveryRates
   rateSource: 'official' | 'mock'
   quotedAt: string
-  aDomicilioDiasMin?: string
-  aDomicilioDiasMax?: string
-  aSucursalDiasMin?: string
-  aSucursalDiasMax?: string
 }
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -96,8 +103,14 @@ export async function getCorreoArgentinoQuote(
 
 function getMockQuote(): CorreoArgentinoQuote {
   return {
-    aSucursalCentavos: 700000,
-    aDomicilioCentavos: 950000,
+    domicilio: {
+      clasico: { priceCentavos: 950000, diasMin: '2', diasMax: '5' },
+      expreso: { priceCentavos: 1300000, diasMin: '1', diasMax: '2' },
+    },
+    sucursal: {
+      clasico: { priceCentavos: 700000, diasMin: '1', diasMax: '3' },
+      expreso: null,
+    },
     rateSource: 'mock',
     quotedAt: new Date().toISOString(),
   }

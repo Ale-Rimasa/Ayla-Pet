@@ -44,13 +44,23 @@ describe('getCorreoArgentinoQuote — modo mock', () => {
     }
   ))
 
-  it('retorna aSucursalCentavos y aDomicilioCentavos positivos en mock', withEnv(
+  it('retorna domicilio.clasico y sucursal.clasico con priceCentavos positivos en mock', withEnv(
     { CORREO_ARGENTINO_MODE: 'mock', CORREO_ARGENTINO_ORIGIN_CP: '1414' },
     async () => {
       const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
       const result = await getCorreoArgentinoQuote(BASE_PARAMS)
-      expect(result.aSucursalCentavos).toBeGreaterThan(0)
-      expect(result.aDomicilioCentavos).toBeGreaterThan(0)
+      expect(result.sucursal.clasico?.priceCentavos).toBeGreaterThan(0)
+      expect(result.domicilio.clasico?.priceCentavos).toBeGreaterThan(0)
+    }
+  ))
+
+  it('NO incluye los campos legacy aDomicilioCentavos/aSucursalCentavos en mock', withEnv(
+    { CORREO_ARGENTINO_MODE: 'mock', CORREO_ARGENTINO_ORIGIN_CP: '1414' },
+    async () => {
+      const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
+      const result = await getCorreoArgentinoQuote(BASE_PARAMS)
+      expect(result).not.toHaveProperty('aDomicilioCentavos')
+      expect(result).not.toHaveProperty('aSucursalCentavos')
     }
   ))
 
@@ -85,14 +95,16 @@ describe('getCorreoArgentinoQuote — modo official (dispatch)', () => {
     { CORREO_ARGENTINO_MODE: 'official' },
     async () => {
       const officialQuote = {
-        aSucursalCentavos: 70000,
-        aDomicilioCentavos: 95000,
+        domicilio: {
+          clasico: { priceCentavos: 95000, diasMin: '2', diasMax: '5' },
+          expreso: null,
+        },
+        sucursal: {
+          clasico: { priceCentavos: 70000, diasMin: '1', diasMax: '3' },
+          expreso: null,
+        },
         rateSource: 'official' as const,
         quotedAt: '2026-06-10T00:00:00.000Z',
-        aDomicilioDiasMin: '2',
-        aDomicilioDiasMax: '5',
-        aSucursalDiasMin: '1',
-        aSucursalDiasMax: '3',
       }
 
       const getQuoteFromOfficial = vi.fn().mockResolvedValue(officialQuote)

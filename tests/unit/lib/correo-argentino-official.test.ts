@@ -121,6 +121,46 @@ const RATES_RESPONSE_BOTH = {
   ],
 }
 
+// 4 combinaciones: D×CP, D×EP, S×CP, S×EP
+const RATES_RESPONSE_ALL_FOUR = {
+  customerId: 'cust-123',
+  validTo: '2026-06-11T00:00:00Z',
+  rates: [
+    {
+      deliveredType: 'D',
+      productType: 'CP',
+      productName: 'Paquete Clásico',
+      price: 100.5,
+      deliveryTimeMin: '2',
+      deliveryTimeMax: '5',
+    },
+    {
+      deliveredType: 'D',
+      productType: 'EP',
+      productName: 'Paquete Expreso',
+      price: 250,
+      deliveryTimeMin: '1',
+      deliveryTimeMax: '2',
+    },
+    {
+      deliveredType: 'S',
+      productType: 'CP',
+      productName: 'Paquete Clásico',
+      price: 80.25,
+      deliveryTimeMin: '1',
+      deliveryTimeMax: '3',
+    },
+    {
+      deliveredType: 'S',
+      productType: 'EP',
+      productName: 'Paquete Expreso',
+      price: 180,
+      deliveryTimeMin: '1',
+      deliveryTimeMax: '2',
+    },
+  ],
+}
+
 function jsonResponse(body: unknown, init?: { status?: number; ok?: boolean }) {
   const status = init?.status ?? 200
   const ok = init?.ok ?? (status >= 200 && status < 300)
@@ -204,7 +244,7 @@ describe('getQuoteFromOfficial — token cache & auth', () => {
 
     expect(tokenCallCount).toBe(2) // token inicial + re-auth
     expect(ratesCallCount).toBe(2) // primer 401 + retry exitoso
-    expect(result.aDomicilioCentavos).toBeGreaterThan(0)
+    expect(result.domicilio.clasico?.priceCentavos).toBeGreaterThan(0)
   }))
 
   it('un segundo 401 consecutivo en /rates lanza CorreoArgentinoOfficialApiError', withEnv(VALID_ENV, async () => {
@@ -359,7 +399,7 @@ describe('getQuoteFromOfficial — mapeo de request /rates', () => {
 describe('getQuoteFromOfficial — mapeo de response /rates', () => {
   beforeEach(() => { vi.resetModules(); vi.restoreAllMocks() })
 
-  it('con D y S presentes, retorna ambos centavos como enteros positivos, rateSource y quotedAt', withEnv(VALID_ENV, async () => {
+  it('con D×CP y S×CP presentes, mapea domicilio.clasico y sucursal.clasico con priceCentavos enteros, rateSource y quotedAt', withEnv(VALID_ENV, async () => {
     mockFetchSequence([
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: RATES_RESPONSE_BOTH },
@@ -368,10 +408,10 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
     const result = await getQuoteFromOfficial(BASE_PARAMS)
 
-    expect(Number.isInteger(result.aDomicilioCentavos)).toBe(true)
-    expect(Number.isInteger(result.aSucursalCentavos)).toBe(true)
-    expect(result.aDomicilioCentavos).toBeGreaterThan(0)
-    expect(result.aSucursalCentavos).toBeGreaterThan(0)
+    expect(Number.isInteger(result.domicilio.clasico?.priceCentavos)).toBe(true)
+    expect(Number.isInteger(result.sucursal.clasico?.priceCentavos)).toBe(true)
+    expect(result.domicilio.clasico?.priceCentavos).toBeGreaterThan(0)
+    expect(result.sucursal.clasico?.priceCentavos).toBeGreaterThan(0)
     expect(result.rateSource).toBe('official')
     expect(result.quotedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
   }))
@@ -381,8 +421,8 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: {
         rates: [
-          { deliveredType: 'D', price: 498.06, deliveryTimeMin: '2', deliveryTimeMax: '5' },
-          { deliveredType: 'S', price: 100, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+          { deliveredType: 'D', productType: 'CP', price: 498.06, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'S', productType: 'CP', price: 100, deliveryTimeMin: '1', deliveryTimeMax: '3' },
         ],
       } },
     ])
@@ -390,25 +430,29 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
     const result = await getQuoteFromOfficial(BASE_PARAMS)
 
-    expect(result.aDomicilioCentavos).toBe(49806)
-    expect(result.aSucursalCentavos).toBe(10000)
+    expect(result.domicilio.clasico?.priceCentavos).toBe(49806)
+    expect(result.sucursal.clasico?.priceCentavos).toBe(10000)
   }))
 
-  it('si /rates devuelve solo un deliveredType, lanza error sin emitir 0/NaN', withEnv(VALID_ENV, async () => {
+  it('si /rates devuelve únicamente deliveredType=D, sucursal queda con ambas celdas null y NO lanza error', withEnv(VALID_ENV, async () => {
     mockFetchSequence([
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: {
         rates: [
-          { deliveredType: 'D', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'D', productType: 'CP', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
         ],
       } },
     ])
 
-    const { getQuoteFromOfficial, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
-    await expect(getQuoteFromOfficial(BASE_PARAMS)).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10000)
+    expect(result.sucursal.clasico).toBeNull()
+    expect(result.sucursal.expreso).toBeNull()
   }))
 
-  it('incluye aDomicilioDiasMin/Max y aSucursalDiasMin/Max cuando vienen en la respuesta', withEnv(VALID_ENV, async () => {
+  it('incluye diasMin/diasMax en domicilio.clasico y sucursal.clasico cuando vienen en la respuesta', withEnv(VALID_ENV, async () => {
     mockFetchSequence([
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: RATES_RESPONSE_BOTH },
@@ -417,22 +461,35 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
     const result = await getQuoteFromOfficial(BASE_PARAMS)
 
-    expect(result.aDomicilioDiasMin).toBe('2')
-    expect(result.aDomicilioDiasMax).toBe('5')
-    expect(result.aSucursalDiasMin).toBe('1')
-    expect(result.aSucursalDiasMax).toBe('3')
+    expect(result.domicilio.clasico?.diasMin).toBe('2')
+    expect(result.domicilio.clasico?.diasMax).toBe('5')
+    expect(result.sucursal.clasico?.diasMin).toBe('1')
+    expect(result.sucursal.clasico?.diasMax).toBe('3')
   }))
 
-  it('con múltiples entradas por deliveredType y ninguna Clásico (CP), toma la primera y emite console.warn', withEnv(VALID_ENV, async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('con las 4 combinaciones (D×CP, D×EP, S×CP, S×EP), mapea cada una a su celda sin descartar ninguna', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/rates$/, body: RATES_RESPONSE_ALL_FOUR },
+    ])
 
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10050)
+    expect(result.domicilio.expreso?.priceCentavos).toBe(25000)
+    expect(result.sucursal.clasico?.priceCentavos).toBe(8025)
+    expect(result.sucursal.expreso?.priceCentavos).toBe(18000)
+  }))
+
+  it('D×CP + D×EP + S×CP (sin S×EP) → sucursal.expreso queda null, el resto mapeado', withEnv(VALID_ENV, async () => {
     mockFetchSequence([
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: {
         rates: [
-          { deliveredType: 'D', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
-          { deliveredType: 'D', price: 200, deliveryTimeMin: '3', deliveryTimeMax: '6' },
-          { deliveredType: 'S', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+          { deliveredType: 'D', productType: 'CP', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'D', productType: 'EP', price: 250, deliveryTimeMin: '1', deliveryTimeMax: '2' },
+          { deliveredType: 'S', productType: 'CP', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
         ],
       } },
     ])
@@ -440,22 +497,61 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
     const result = await getQuoteFromOfficial(BASE_PARAMS)
 
-    expect(result.aDomicilioCentavos).toBe(10000) // primera entrada D (price: 100)
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10000)
+    expect(result.domicilio.expreso?.priceCentavos).toBe(25000)
+    expect(result.sucursal.clasico?.priceCentavos).toBe(8000)
+    expect(result.sucursal.expreso).toBeNull()
+  }))
+
+  it('productType desconocido (XX) se ignora con console.warn, sin throw, y no afecta el resto del mapeo', withEnv(VALID_ENV, async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/rates$/, body: {
+        rates: [
+          { deliveredType: 'D', productType: 'CP', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'D', productType: 'XX', price: 999, deliveryTimeMin: '1', deliveryTimeMax: '2' },
+          { deliveredType: 'S', productType: 'CP', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+        ],
+      } },
+    ])
+
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10000)
+    expect(result.domicilio.expreso).toBeNull()
+    expect(result.sucursal.clasico?.priceCentavos).toBe(8000)
     expect(warnSpy).toHaveBeenCalled()
   }))
 
-  it('con múltiples entradas por deliveredType, prefiere la tarifa Clásico (productType CP) aunque no sea la primera, sin warning', withEnv(VALID_ENV, async () => {
+  it('rates vacío devuelve matriz todo-null, sin throw', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/rates$/, body: { rates: [] } },
+    ])
+
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.domicilio.clasico).toBeNull()
+    expect(result.domicilio.expreso).toBeNull()
+    expect(result.sucursal.clasico).toBeNull()
+    expect(result.sucursal.expreso).toBeNull()
+    expect(result.rateSource).toBe('official')
+  }))
+
+  it('deliveredType desconocido (Z) se ignora con warn, el resto se mapea normalmente', withEnv(VALID_ENV, async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     mockFetchSequence([
       { url: /\/token$/, body: TOKEN_RESPONSE },
       { url: /\/rates$/, body: {
         rates: [
-          // Expreso primero a propósito: el orden del array NO debe determinar la tarifa
-          { deliveredType: 'D', productType: 'EP', productName: 'Paquete Expreso', price: 250, deliveryTimeMin: '1', deliveryTimeMax: '2' },
-          { deliveredType: 'D', productType: 'CP', productName: 'Paquete Clásico', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
-          { deliveredType: 'S', productType: 'EP', productName: 'Paquete Expreso', price: 180, deliveryTimeMin: '1', deliveryTimeMax: '2' },
-          { deliveredType: 'S', productType: 'CP', productName: 'Paquete Clásico', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+          { deliveredType: 'Z', productType: 'CP', price: 999, deliveryTimeMin: '1', deliveryTimeMax: '2' },
+          { deliveredType: 'D', productType: 'CP', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'S', productType: 'CP', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
         ],
       } },
     ])
@@ -463,11 +559,30 @@ describe('getQuoteFromOfficial — mapeo de response /rates', () => {
     const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
     const result = await getQuoteFromOfficial(BASE_PARAMS)
 
-    expect(result.aDomicilioCentavos).toBe(10000) // CP, no la primera (EP)
-    expect(result.aSucursalCentavos).toBe(8000)
-    expect(result.aDomicilioDiasMin).toBe('2')
-    expect(result.aDomicilioDiasMax).toBe('5')
-    expect(warnSpy).not.toHaveBeenCalled()
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10000)
+    expect(result.sucursal.clasico?.priceCentavos).toBe(8000)
+    expect(warnSpy).toHaveBeenCalled()
+  }))
+
+  it('entrada duplicada D×CP conserva la primera y emite warn (orden estable, no last-wins)', withEnv(VALID_ENV, async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/rates$/, body: {
+        rates: [
+          { deliveredType: 'D', productType: 'CP', price: 100, deliveryTimeMin: '2', deliveryTimeMax: '5' },
+          { deliveredType: 'D', productType: 'CP', price: 999, deliveryTimeMin: '9', deliveryTimeMax: '9' },
+          { deliveredType: 'S', productType: 'CP', price: 80, deliveryTimeMin: '1', deliveryTimeMax: '3' },
+        ],
+      } },
+    ])
+
+    const { getQuoteFromOfficial } = await import('@/lib/correo-argentino-official')
+    const result = await getQuoteFromOfficial(BASE_PARAMS)
+
+    expect(result.domicilio.clasico?.priceCentavos).toBe(10000) // primera entrada D×CP, no la duplicada
+    expect(warnSpy).toHaveBeenCalled()
   }))
 })
 
@@ -503,7 +618,7 @@ describe('getQuoteFromOfficial — retry, timeout y errores', () => {
     const result = await promise
 
     expect(ratesCallCount).toBe(2)
-    expect(result.aDomicilioCentavos).toBeGreaterThan(0)
+    expect(result.domicilio.clasico?.priceCentavos).toBeGreaterThan(0)
   }))
 
   it('429 en todos los intentos (2 totales) lanza CorreoArgentinoOfficialApiError de rate-limiting', withEnv(VALID_ENV, async () => {

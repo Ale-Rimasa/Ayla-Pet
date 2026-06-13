@@ -40,6 +40,7 @@ import {
   CorreoArgentinoApiError,
   type GetCorreoArgentinoQuoteParams,
   type CorreoArgentinoQuote,
+  type DeliveryRates,
 } from '@/lib/correo-argentino'
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -384,23 +385,12 @@ function pesosToCentavos(pesos: number): number {
   return Math.round(pesos * 100)
 }
 
-// Tarifa pineada: 'CP' = Paquete Clásico. MiCorreo puede devolver más de una
-// tarifa por deliveredType (Clásico + Expreso); siempre cotizamos la Clásica
-// en vez de depender del orden del array.
-const PINNED_PRODUCT_TYPE = 'CP'
-
-type RateEntry = z.infer<typeof rateEntrySchema>
-
-function pickRate(entries: RateEntry[], deliveredType: string): RateEntry {
-  if (entries.length === 1) return entries[0]
-
-  const pinned = entries.find((r) => r.productType === PINNED_PRODUCT_TYPE)
-  if (pinned) return pinned
-
-  console.warn(
-    `[MICORREO] /rates devolvió ${entries.length} entradas con deliveredType=${deliveredType} y ninguna es Clásico (${PINNED_PRODUCT_TYPE}) — se usa la primera`
-  )
-  return entries[0]
+// Mapa productType (MiCorreo) → velocidad (dominio interno). 'CP' = Paquete
+// Clásico, 'EP' = Paquete Expreso. Cualquier otro valor (vacío, desconocido)
+// se ignora — ver mapRatesResponse.
+const PRODUCT_TYPE_MAP: Record<string, 'clasico' | 'expreso'> = {
+  CP: 'clasico',
+  EP: 'expreso',
 }
 
 function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
@@ -411,28 +401,46 @@ function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
 
   const { rates } = parsed.data
 
-  const domicilioEntries = rates.filter((r) => r.deliveredType === 'D')
-  const sucursalEntries = rates.filter((r) => r.deliveredType === 'S')
-
-  if (domicilioEntries.length === 0 || sucursalEntries.length === 0) {
-    throw new CorreoArgentinoApiError(
-      'La respuesta de /rates no incluye ambos tipos de entrega (D y S)',
-      { code: 'missing_delivered_type' }
-    )
+  const matriz: { domicilio: DeliveryRates; sucursal: DeliveryRates } = {
+    domicilio: { clasico: null, expreso: null },
+    sucursal: { clasico: null, expreso: null },
   }
 
-  const domicilio = pickRate(domicilioEntries, 'D')
-  const sucursal = pickRate(sucursalEntries, 'S')
+  for (const rate of rates) {
+    let grupo: 'domicilio' | 'sucursal'
+    if (rate.deliveredType === 'D') {
+      grupo = 'domicilio'
+    } else if (rate.deliveredType === 'S') {
+      grupo = 'sucursal'
+    } else {
+      console.warn(`[MICORREO] deliveredType desconocido: "${rate.deliveredType}" — entrada ignorada`)
+      continue
+    }
+
+    const velocidad = rate.productType ? PRODUCT_TYPE_MAP[rate.productType] : undefined
+    if (!velocidad) {
+      console.warn(`[MICORREO] productType desconocido: "${rate.productType ?? ''}" — entrada ignorada`)
+      continue
+    }
+
+    if (matriz[grupo][velocidad] !== null) {
+      console.warn(
+        `[MICORREO] /rates devolvió más de una entrada para deliveredType=${rate.deliveredType} productType=${rate.productType} — se conserva la primera`
+      )
+      continue
+    }
+
+    matriz[grupo][velocidad] = {
+      priceCentavos: pesosToCentavos(rate.price),
+      diasMin: rate.deliveryTimeMin,
+      diasMax: rate.deliveryTimeMax,
+    }
+  }
 
   return {
-    aDomicilioCentavos: pesosToCentavos(domicilio.price),
-    aSucursalCentavos: pesosToCentavos(sucursal.price),
+    ...matriz,
     rateSource: 'official',
     quotedAt: new Date().toISOString(),
-    aDomicilioDiasMin: domicilio.deliveryTimeMin,
-    aDomicilioDiasMax: domicilio.deliveryTimeMax,
-    aSucursalDiasMin: sucursal.deliveryTimeMin,
-    aSucursalDiasMax: sucursal.deliveryTimeMax,
   }
 }
 
