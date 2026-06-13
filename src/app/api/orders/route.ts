@@ -154,9 +154,13 @@ export async function POST(request: NextRequest) {
         destinationProvincia: shipping.province,
         packages: packageData,
       })
+      // TODO(Fase 1, Tanda B): reemplazar por lookup bidimensional (grupo x
+      // productType) y manejar 422 'shipping_option_unavailable' cuando la
+      // celda elegida sea null. Por ahora se usa 'clasico' (CP) para
+      // preservar el comportamiento previo a este cambio de shape.
       validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
-        ? quote.aDomicilioCentavos
-        : quote.aSucursalCentavos
+        ? quote.domicilio.clasico?.priceCentavos ?? 0
+        : quote.sucursal.clasico?.priceCentavos ?? 0
     } catch (err) {
       console.error('[POST /api/orders] getCorreoArgentinoQuote error', err)
       return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })

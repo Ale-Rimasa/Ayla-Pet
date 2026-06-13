@@ -15,8 +15,14 @@ vi.mock('@/lib/shipping-package', () => ({
 
 vi.mock('@/lib/correo-argentino', () => ({
   getCorreoArgentinoQuote: vi.fn().mockResolvedValue({
-    aSucursalCentavos: 700000,
-    aDomicilioCentavos: 950000,
+    domicilio: {
+      clasico: { priceCentavos: 950000, diasMin: '2', diasMax: '5' },
+      expreso: { priceCentavos: 1300000, diasMin: '1', diasMax: '2' },
+    },
+    sucursal: {
+      clasico: { priceCentavos: 700000, diasMin: '1', diasMax: '3' },
+      expreso: null,
+    },
     rateSource: 'mock',
     quotedAt: '2026-05-30T00:00:00.000Z',
   }),
@@ -51,8 +57,25 @@ describe('POST /api/shipping/quote — correo argentino', () => {
 
     expect(body).toHaveProperty('correoArgentino')
     expect(body.correoArgentino.rateSource).toBe('mock')
-    expect(body.correoArgentino.aSucursalCentavos).toBeGreaterThan(0)
-    expect(body.correoArgentino.aDomicilioCentavos).toBeGreaterThan(0)
+    expect(body.correoArgentino.sucursal.clasico.priceCentavos).toBeGreaterThan(0)
+    expect(body.correoArgentino.domicilio.clasico.priceCentavos).toBeGreaterThan(0)
+  })
+
+  it('incluye domicilio y sucursal con clasico y expreso (null si no disponible)', async () => {
+    const { POST } = await import('@/app/api/shipping/quote/route')
+    const req = makeRequest({
+      cp: '2000',
+      provincia: 'AR-S',
+      items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
+    })
+    const res = await POST(req as any)
+    const body = await res.json()
+
+    expect(body.correoArgentino.domicilio).toHaveProperty('clasico')
+    expect(body.correoArgentino.domicilio).toHaveProperty('expreso')
+    expect(body.correoArgentino.sucursal).toHaveProperty('clasico')
+    expect(body.correoArgentino.sucursal).toHaveProperty('expreso')
+    expect(body.correoArgentino.sucursal.expreso).toBeNull()
   })
 
   it('NO incluye datos de andreani ni cacheKey en el response', async () => {

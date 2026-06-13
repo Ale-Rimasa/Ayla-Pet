@@ -34,8 +34,14 @@ vi.mock('@/lib/shipping-package', () => ({
 
 vi.mock('@/lib/correo-argentino', () => ({
   getCorreoArgentinoQuote: vi.fn().mockResolvedValue({
-    aDomicilioCentavos: 800000,
-    aSucursalCentavos: 600000,
+    domicilio: {
+      clasico: { priceCentavos: 800000, diasMin: '2', diasMax: '5' },
+      expreso: null,
+    },
+    sucursal: {
+      clasico: { priceCentavos: 600000, diasMin: '1', diasMax: '3' },
+      expreso: null,
+    },
     rateSource: 'mock',
     quotedAt: '',
   }),
