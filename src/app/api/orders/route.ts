@@ -35,6 +35,9 @@ const bodySchema = z.object({
   }),
   items: z.array(orderItemSchema).min(1),
   shippingMethod: z.enum(SHIPPING_METHODS),
+  // Velocidad de envío elegida ('CP'=Clásico, 'EP'=Expreso). Default 'CP' para
+  // retro-compat con clientes que aún no envían este campo.
+  productType: z.enum(['CP', 'EP']).default('CP'),
   // Opcional: precio visto por el cliente. Solo usado para detectar cambio de precio.
   // El servidor SIEMPRE calcula el costo definitivo — este valor nunca determina el total.
   clientShippingCost: z.number().int().min(0).optional(),
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { customer, shipping, items, shippingMethod, clientShippingCost, notes, observations, engravingText } = parsed.data
+  const { customer, shipping, items, shippingMethod, productType, clientShippingCost, notes, observations, engravingText } = parsed.data
 
   // 4. Leer precios de variantes desde DB (nunca del cliente)
   const supabase = await createClient()
@@ -154,13 +157,19 @@ export async function POST(request: NextRequest) {
         destinationProvincia: shipping.province,
         packages: packageData,
       })
-      // TODO(Fase 1, Tanda B): reemplazar por lookup bidimensional (grupo x
-      // productType) y manejar 422 'shipping_option_unavailable' cuando la
-      // celda elegida sea null. Por ahora se usa 'clasico' (CP) para
-      // preservar el comportamiento previo a este cambio de shape.
-      validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
-        ? quote.domicilio.clasico?.priceCentavos ?? 0
-        : quote.sucursal.clasico?.priceCentavos ?? 0
+
+      const grupo = shippingMethod === 'correo-argentino-sucursal' ? 'sucursal' : 'domicilio'
+      const velocidad = productType === 'EP' ? 'expreso' : 'clasico'
+      const rate = quote[grupo][velocidad]
+
+      if (!rate) {
+        return NextResponse.json(
+          { error: 'shipping_option_unavailable', shippingMethod, productType },
+          { status: 422 }
+        )
+      }
+
+      validatedShippingCost = rate.priceCentavos
     } catch (err) {
       console.error('[POST /api/orders] getCorreoArgentinoQuote error', err)
       return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })

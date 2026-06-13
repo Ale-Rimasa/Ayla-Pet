@@ -36,7 +36,7 @@ vi.mock('@/lib/correo-argentino', () => ({
   getCorreoArgentinoQuote: vi.fn().mockResolvedValue({
     domicilio: {
       clasico: { priceCentavos: 800000, diasMin: '2', diasMax: '5' },
-      expreso: null,
+      expreso: { priceCentavos: 1100000, diasMin: '1', diasMax: '2' },
     },
     sucursal: {
       clasico: { priceCentavos: 600000, diasMin: '1', diasMax: '3' },
@@ -140,7 +140,7 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
     )
   })
 
-  it('usa aDomicilioCentavos como costo validado para correo-argentino-domicilio', async () => {
+  it('sin productType (default CP) usa quote.domicilio.clasico como costo validado', async () => {
     const { createOrder } = await import('@/lib/db/orders')
     const { POST } = await import('@/app/api/orders/route')
 
@@ -155,7 +155,7 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
     )
   })
 
-  it('usa aSucursalCentavos como costo validado para correo-argentino-sucursal', async () => {
+  it('sin productType (default CP) usa quote.sucursal.clasico como costo validado', async () => {
     const { createOrder } = await import('@/lib/db/orders')
     const { POST } = await import('@/app/api/orders/route')
 
@@ -170,7 +170,59 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
     )
   })
 
-  it('retorna 409 cuando el precio CA domicilio cambió', async () => {
+  it('productType=EP + domicilio usa quote.domicilio.expreso como costo validado', async () => {
+    const { createOrder } = await import('@/lib/db/orders')
+    const { POST } = await import('@/app/api/orders/route')
+
+    await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'correo-argentino-domicilio',
+      productType: 'EP',
+      clientShippingCost: 1100000,
+    }) as any)
+
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ shippingCost: 1100000 })
+    )
+  })
+
+  it('retorna 422 shipping_option_unavailable cuando la combinación elegida es null y no crea la orden', async () => {
+    const { createOrder } = await import('@/lib/db/orders')
+    const { POST } = await import('@/app/api/orders/route')
+
+    const res = await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'correo-argentino-sucursal',
+      productType: 'EP', // quote.sucursal.expreso === null en el mock
+      clientShippingCost: 999999,
+    }) as any)
+
+    expect(res.status).toBe(422)
+    const body = await res.json()
+    expect(body.error).toBe('shipping_option_unavailable')
+    expect(createOrder).not.toHaveBeenCalled()
+  })
+
+  it('retorna 409 shipping_price_changed con el costo derivado del lookup bidimensional', async () => {
+    const { createOrder } = await import('@/lib/db/orders')
+    const { POST } = await import('@/app/api/orders/route')
+
+    const res = await POST(makeRequest({
+      ...basePayload,
+      shippingMethod: 'correo-argentino-sucursal',
+      productType: 'CP',
+      clientShippingCost: 999999, // distinto de quote.sucursal.clasico.priceCentavos (600000)
+    }) as any)
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toBe('shipping_price_changed')
+    expect(body.newShippingCost).toBe(600000)
+    expect(body.newTotal).toBe(500000 + 600000)
+    expect(createOrder).not.toHaveBeenCalled()
+  })
+
+  it('retorna 409 cuando el precio CA domicilio (CP, default) cambió', async () => {
     const { POST } = await import('@/app/api/orders/route')
 
     const res = await POST(makeRequest({
