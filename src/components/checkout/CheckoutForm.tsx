@@ -125,7 +125,7 @@ export function CheckoutForm() {
     defaultValues: {
       customer: storedCustomer ?? undefined,
       shippingAddress: storedShipping ?? undefined,
-      shippingMethod: 'andreani-domicilio',
+      shippingMethod: 'correo-argentino-domicilio',
       paymentMethod: 'transfer',
       clientShippingCost: undefined,
     },

@@ -199,41 +199,6 @@ describe('resolveShippingPackages', () => {
   })
 })
 
-// ── T11: cache key diferente para 1 mate vs 2 mates ──────────────────────────
-
-describe('buildCacheKey', () => {
-  it('genera claves distintas para 1 bulto vs 2 bultos', async () => {
-    const { buildCacheKey } = await import('@/lib/andreani')
-
-    const key1 = buildCacheKey({
-      destinationCp: '1414',
-      packages: [{ weightG: 600, heightMm: 200, widthMm: 150, lengthMm: 150 }],
-      declaredValueCentavos: 500000,
-    })
-
-    const key2 = buildCacheKey({
-      destinationCp: '1414',
-      packages: [
-        { weightG: 600, heightMm: 200, widthMm: 150, lengthMm: 150 },
-        { weightG: 600, heightMm: 200, widthMm: 150, lengthMm: 150 },
-      ],
-      declaredValueCentavos: 1000000,
-    })
-
-    expect(key1).not.toBe(key2)
-  })
-
-  it('genera claves distintas para CPs diferentes', async () => {
-    const { buildCacheKey } = await import('@/lib/andreani')
-    const pkg = [{ weightG: 600, heightMm: 200, widthMm: 150, lengthMm: 150 }]
-
-    const key1 = buildCacheKey({ destinationCp: '1414', packages: pkg, declaredValueCentavos: 500000 })
-    const key2 = buildCacheKey({ destinationCp: '9000', packages: pkg, declaredValueCentavos: 500000 })
-
-    expect(key1).not.toBe(key2)
-  })
-})
-
 // ── packagesToSnapshots ───────────────────────────────────────────────────────
 
 describe('packagesToSnapshots', () => {

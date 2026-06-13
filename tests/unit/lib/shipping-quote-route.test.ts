@@ -13,15 +13,6 @@ vi.mock('@/lib/shipping-package', () => ({
   }),
 }))
 
-vi.mock('@/lib/andreani', () => ({
-  getShippingQuote: vi.fn().mockResolvedValue({
-    price: 500000,
-    estimatedDays: '3–7 días hábiles',
-    quotedAt: '2026-05-30T00:00:00.000Z',
-  }),
-  buildCacheKey: vi.fn().mockReturnValue('andreani:mock:key'),
-}))
-
 vi.mock('@/lib/correo-argentino', () => ({
   getCorreoArgentinoQuote: vi.fn().mockResolvedValue({
     aSucursalCentavos: 700000,
@@ -45,10 +36,10 @@ function makeRequest(body: unknown): Request {
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
-describe('POST /api/shipping/quote — correo argentino integration', () => {
+describe('POST /api/shipping/quote — correo argentino', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
-  it('incluye correoArgentino en el response cuando provincia está presente', async () => {
+  it('incluye correoArgentino en el response con cp y provincia válidos', async () => {
     const { POST } = await import('@/app/api/shipping/quote/route')
     const req = makeRequest({
       cp: '2000',
@@ -64,38 +55,29 @@ describe('POST /api/shipping/quote — correo argentino integration', () => {
     expect(body.correoArgentino.aDomicilioCentavos).toBeGreaterThan(0)
   })
 
-  it('NO incluye correoArgentino en el response cuando provincia está ausente', async () => {
+  it('NO incluye datos de andreani ni cacheKey en el response', async () => {
     const { POST } = await import('@/app/api/shipping/quote/route')
-    const req = makeRequest({
-      cp: '2000',
-      items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
-    })
-    const res = await POST(req as any)
-    const body = await res.json()
-
-    expect(body).not.toHaveProperty('correoArgentino')
-  })
-
-  it('incluye andreani en el response con y sin provincia', async () => {
-    const { POST } = await import('@/app/api/shipping/quote/route')
-
-    // Con provincia
-    const res1 = await POST(makeRequest({
+    const res = await POST(makeRequest({
       cp: '2000',
       provincia: 'AR-S',
       items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
     }) as any)
-    const body1 = await res1.json()
-    expect(body1).toHaveProperty('andreani')
-    expect(body1.andreani.price).toBe(500000)
+    const body = await res.json()
 
-    // Sin provincia
-    const res2 = await POST(makeRequest({
+    expect(body).not.toHaveProperty('andreani')
+    expect(body).not.toHaveProperty('cacheKey')
+  })
+
+  it('rechaza con 400 cuando provincia está ausente', async () => {
+    const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
+    const { POST } = await import('@/app/api/shipping/quote/route')
+    const res = await POST(makeRequest({
       cp: '2000',
       items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
     }) as any)
-    const body2 = await res2.json()
-    expect(body2).toHaveProperty('andreani')
+
+    expect(res.status).toBe(400)
+    expect(getCorreoArgentinoQuote).not.toHaveBeenCalled()
   })
 
   it('llama getCorreoArgentinoQuote con cp y provincia correctos', async () => {
@@ -116,18 +98,6 @@ describe('POST /api/shipping/quote — correo argentino integration', () => {
     )
   })
 
-  it('NO llama getCorreoArgentinoQuote cuando provincia está ausente', async () => {
-    const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
-    const { POST } = await import('@/app/api/shipping/quote/route')
-
-    await POST(makeRequest({
-      cp: '2000',
-      items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
-    }) as any)
-
-    expect(getCorreoArgentinoQuote).not.toHaveBeenCalled()
-  })
-
   it('rechaza provincia con formato inválido (sin AR-)', async () => {
     const { POST } = await import('@/app/api/shipping/quote/route')
     const res = await POST(makeRequest({
@@ -139,15 +109,17 @@ describe('POST /api/shipping/quote — correo argentino integration', () => {
     expect(res.status).toBe(400)
   })
 
-  it('cacheKey sigue presente en el response', async () => {
+  it('responde 502 cuando la cotización de correo argentino falla', async () => {
+    const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
+    vi.mocked(getCorreoArgentinoQuote).mockRejectedValueOnce(new Error('boom'))
+
     const { POST } = await import('@/app/api/shipping/quote/route')
     const res = await POST(makeRequest({
       cp: '2000',
       provincia: 'AR-S',
       items: [{ variantId: VALID_VARIANT_ID, quantity: 1 }],
     }) as any)
-    const body = await res.json()
 
-    expect(body).toHaveProperty('cacheKey')
+    expect(res.status).toBe(502)
   })
 })

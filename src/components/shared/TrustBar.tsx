@@ -4,7 +4,7 @@ const TRUST_ITEMS = [
   {
     icon: Truck,
     title: 'Envíos a todo el país',
-    description: 'Correo Argentino y Andreani',
+    description: 'Con Correo Argentino',
   },
   {
     icon: ShieldCheck,

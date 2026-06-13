@@ -4,19 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createOrder } from '@/lib/db/orders'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { resolveShippingPackages, packagesToSnapshots } from '@/lib/shipping-package'
-import { getShippingQuote, AndreaniUnavailableError } from '@/lib/andreani'
 import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { SHIPPING_METHODS } from '@/types/shipping'
 import type { ShippingPackageSnapshot } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
 
-function isAndreaniEnabled(): boolean {
-  if (process.env.NODE_ENV !== 'production') return true
-  return process.env.ANDREANI_ENABLED === 'true'
-}
-
-function isShippingQuoteAvailable(method: string): boolean {
-  if (method === 'andreani-domicilio') return isAndreaniEnabled()
+function isShippingQuoteAvailable(): boolean {
   const correoMode = process.env.CORREO_ARGENTINO_MODE ?? 'mock'
   return correoMode === 'official'
 }
@@ -136,7 +129,7 @@ export async function POST(request: NextRequest) {
   let validatedShippingCost = 0
   let packageSnapshots: ShippingPackageSnapshot[] = []
 
-  if (isShippingQuoteAvailable(shippingMethod)) {
+  if (isShippingQuoteAvailable()) {
     const resolved = await resolveShippingPackages(
       items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))
     )
@@ -156,29 +149,16 @@ export async function POST(request: NextRequest) {
     }))
 
     try {
-      if (shippingMethod === 'correo-argentino-domicilio' || shippingMethod === 'correo-argentino-sucursal') {
-        const quote = await getCorreoArgentinoQuote({
-          destinationCp: shipping.postalCode,
-          destinationProvincia: shipping.province,
-          packages: packageData,
-        })
-        validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
-          ? quote.aDomicilioCentavos
-          : quote.aSucursalCentavos
-      } else {
-        const quote = await getShippingQuote({
-          destinationCp: shipping.postalCode,
-          packages: packageData,
-          declaredValueCentavos: subtotal,
-          bypassCache: true,
-        })
-        validatedShippingCost = quote.price
-      }
+      const quote = await getCorreoArgentinoQuote({
+        destinationCp: shipping.postalCode,
+        destinationProvincia: shipping.province,
+        packages: packageData,
+      })
+      validatedShippingCost = shippingMethod === 'correo-argentino-domicilio'
+        ? quote.aDomicilioCentavos
+        : quote.aSucursalCentavos
     } catch (err) {
-      if (err instanceof AndreaniUnavailableError) {
-        return NextResponse.json({ error: 'andreani_unavailable' }, { status: 503 })
-      }
-      console.error('[POST /api/orders] getShippingQuote error', err)
+      console.error('[POST /api/orders] getCorreoArgentinoQuote error', err)
       return NextResponse.json({ error: 'shipping_unavailable' }, { status: 503 })
     }
 

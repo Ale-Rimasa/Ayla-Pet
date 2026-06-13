@@ -3,6 +3,30 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ShippingQuoteAccordion } from '@/components/product/ShippingQuoteAccordion'
 import { formatPrice } from '@/lib/utils'
 
+// El Select de Base UI necesita PointerEvents reales que jsdom no implementa
+// (la interacción real se cubre con Playwright). Acá lo reemplazamos por un
+// <select> nativo para poder testear la lógica del componente.
+vi.mock('@/components/ui/select', async () => {
+  const { AR_PROVINCES_LIST } = await import('@/lib/constants')
+  return {
+    Select: ({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) => (
+      <select
+        data-testid="provincia-select"
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+      >
+        <option value="">Seleccioná una provincia</option>
+        {AR_PROVINCES_LIST.map(({ name, code }: { name: string; code: string }) => (
+          <option key={code} value={code}>{name}</option>
+        ))}
+      </select>
+    ),
+    SelectTrigger: () => null,
+    SelectContent: () => null,
+    SelectItem: () => null,
+  }
+})
+
 const VARIANT_ID = '123e4567-e89b-12d3-a456-426614174000'
 
 // Normaliza espacios (incluido NBSP) para comparar con el texto renderizado por getByText
@@ -16,6 +40,11 @@ function openAccordion() {
 function fillCp(value: string) {
   const cpInput = screen.getByLabelText(/código postal/i)
   fireEvent.change(cpInput, { target: { value } })
+}
+
+function selectProvincia(code: string = 'AR-B') {
+  const select = screen.getByTestId('provincia-select')
+  fireEvent.change(select, { target: { value: code } })
 }
 
 function submitForm() {
@@ -81,6 +110,7 @@ describe('ShippingQuoteAccordion', () => {
     openAccordion()
 
     fillCp('1425')
+    selectProvincia('AR-B')
     submitForm()
 
     await waitFor(() => {
@@ -94,8 +124,25 @@ describe('ShippingQuoteAccordion', () => {
     const body = JSON.parse(options.body)
     expect(body).toEqual({
       cp: '1425',
+      provincia: 'AR-B',
       items: [{ variantId: VARIANT_ID, quantity: 1 }],
     })
+  })
+
+  it('con CP válido pero sin provincia, muestra error y NO llama a fetch', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ShippingQuoteAccordion variantId={VARIANT_ID} />)
+    openAccordion()
+
+    fillCp('1425')
+    submitForm()
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(/seleccioná una provincia/i)
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('muestra los precios a domicilio y a sucursal con una respuesta 200 mockeada', async () => {
@@ -119,6 +166,7 @@ describe('ShippingQuoteAccordion', () => {
     openAccordion()
 
     fillCp('1425')
+    selectProvincia('AR-B')
     submitForm()
 
     await waitFor(() => {
@@ -143,6 +191,7 @@ describe('ShippingQuoteAccordion', () => {
     openAccordion()
 
     fillCp('1425')
+    selectProvincia('AR-B')
     submitForm()
 
     await waitFor(() => {
@@ -162,6 +211,7 @@ describe('ShippingQuoteAccordion', () => {
     openAccordion()
 
     fillCp('1425')
+    selectProvincia('AR-B')
     submitForm()
 
     await waitFor(() => {

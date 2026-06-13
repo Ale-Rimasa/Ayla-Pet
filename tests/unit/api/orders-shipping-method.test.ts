@@ -32,11 +32,6 @@ vi.mock('@/lib/shipping-package', () => ({
   packagesToSnapshots: vi.fn().mockReturnValue([]),
 }))
 
-vi.mock('@/lib/andreani', () => ({
-  getShippingQuote: vi.fn().mockResolvedValue({ price: 500000, estimatedDays: '5d', quotedAt: '' }),
-  AndreaniUnavailableError: class AndreaniUnavailableError extends Error {},
-}))
-
 vi.mock('@/lib/correo-argentino', () => ({
   getCorreoArgentinoQuote: vi.fn().mockResolvedValue({
     aDomicilioCentavos: 800000,
@@ -81,8 +76,7 @@ describe('POST /api/orders — engravingText bodySchema validation', () => {
 
     await POST(makeRequest({
       ...basePayload,
-      shippingMethod: 'andreani-domicilio',
-      clientShippingCost: 500000,
+      shippingMethod: 'correo-argentino-domicilio',
       engravingText: 'Bobi',
     }) as any)
 
@@ -96,8 +90,7 @@ describe('POST /api/orders — engravingText bodySchema validation', () => {
 
     const res = await POST(makeRequest({
       ...basePayload,
-      shippingMethod: 'andreani-domicilio',
-      clientShippingCost: 500000,
+      shippingMethod: 'correo-argentino-domicilio',
     }) as any)
 
     expect(res.status).not.toBe(400)
@@ -108,8 +101,7 @@ describe('POST /api/orders — engravingText bodySchema validation', () => {
 
     const res = await POST(makeRequest({
       ...basePayload,
-      shippingMethod: 'andreani-domicilio',
-      clientShippingCost: 500000,
+      shippingMethod: 'correo-argentino-domicilio',
       engravingText: 'A'.repeat(21),
     }) as any)
 
@@ -127,9 +119,8 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
 
   afterEach(() => { vi.unstubAllEnvs() })
 
-  it('llama getCorreoArgentinoQuote (no getShippingQuote) cuando shippingMethod=correo-argentino-domicilio', async () => {
+  it('llama getCorreoArgentinoQuote cuando shippingMethod=correo-argentino-domicilio', async () => {
     const { getCorreoArgentinoQuote } = await import('@/lib/correo-argentino')
-    const { getShippingQuote } = await import('@/lib/andreani')
     const { POST } = await import('@/app/api/orders/route')
 
     await POST(makeRequest({
@@ -141,7 +132,6 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
     expect(getCorreoArgentinoQuote).toHaveBeenCalledWith(
       expect.objectContaining({ destinationProvincia: 'AR-C' })
     )
-    expect(getShippingQuote).not.toHaveBeenCalled()
   })
 
   it('usa aDomicilioCentavos como costo validado para correo-argentino-domicilio', async () => {
@@ -195,8 +185,8 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
 
     await POST(makeRequest({
       ...basePayload,
-      shippingMethod: 'andreani-domicilio',
-      clientShippingCost: 500000,
+      shippingMethod: 'correo-argentino-domicilio',
+      clientShippingCost: 800000,
       observations: 'Casa con rejas negras',
     }) as any)
 

@@ -14,7 +14,7 @@ const validData = {
     province: 'AR-B',
     postalCode: '1043',
   },
-  shippingMethod: 'andreani-domicilio' as const,
+  shippingMethod: 'correo-argentino-domicilio' as const,
   paymentMethod: 'transfer' as const,
 }
 

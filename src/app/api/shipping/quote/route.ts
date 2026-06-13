@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveShippingPackages } from '@/lib/shipping-package'
-import { getShippingQuote, buildCacheKey } from '@/lib/andreani'
 import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
 import { checkRateLimit } from '@/lib/rate-limit'
 
@@ -14,7 +13,7 @@ const MAX_PACKAGES = 50
 
 const bodySchema = z.object({
   cp: z.string().regex(CP_REGEX, 'Código postal inválido (4–8 dígitos)'),
-  provincia: z.string().regex(/^AR-[A-Z]+$/, 'Provincia inválida (formato: AR-X)').optional(),
+  provincia: z.string().regex(/^AR-[A-Z]+$/, 'Provincia inválida (formato: AR-X)'),
   items: z
     .array(
       z.object({
@@ -74,12 +73,6 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Valor declarado: se usará suma de precios de variantes cuando esté disponible.
-  // Por ahora se usa un valor declarado simbólico para el mock.
-  // TODO: cuando Andreani real esté activo, recibir o calcular valor declarado
-  // pasando variantIds y buscando precios en DB.
-  const declaredValueCentavos = 0 // placeholder para mock
-
   const packageData = resolved.packages.map((p) => ({
     weightG: p.weightG,
     heightMm: p.heightMm,
@@ -87,39 +80,15 @@ export async function POST(request: NextRequest) {
     lengthMm: p.lengthMm,
   }))
 
-  const andreaniEnabled =
-    process.env.NODE_ENV !== 'production' || process.env.ANDREANI_ENABLED === 'true'
-
-  const cacheKey = andreaniEnabled
-    ? buildCacheKey({ destinationCp: cp, packages: packageData, declaredValueCentavos })
-    : undefined
-
   try {
-    const andreani = andreaniEnabled
-      ? await getShippingQuote({ destinationCp: cp, packages: packageData, declaredValueCentavos })
-      : undefined
-
-    const correoArgentino = provincia
-      ? await getCorreoArgentinoQuote({
-          destinationCp: cp,
-          destinationProvincia: provincia,
-          packages: packageData,
-        })
-      : undefined
-
-    if (!andreani && !correoArgentino) {
-      return NextResponse.json(
-        { error: 'No hay opciones de envío disponibles para este código postal' },
-        { status: 422 }
-      )
-    }
+    const correoArgentino = await getCorreoArgentinoQuote({
+      destinationCp: cp,
+      destinationProvincia: provincia,
+      packages: packageData,
+    })
 
     return NextResponse.json(
-      {
-        ...(andreani ? { andreani } : {}),
-        ...(correoArgentino ? { correoArgentino } : {}),
-        ...(cacheKey ? { cacheKey } : {}),
-      },
+      { correoArgentino },
       { headers: { 'Cache-Control': 'private, max-age=300' } }
     )
   } catch (err) {

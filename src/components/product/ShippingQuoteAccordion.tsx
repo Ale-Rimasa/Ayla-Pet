@@ -39,17 +39,8 @@ interface CorreoArgentinoQuote {
   aSucursalDiasMax?: string
 }
 
-interface AndreaniQuote {
-  price: number
-  // La API ya incluye la unidad, ej: "3–7 días hábiles"
-  estimatedDays: string
-  quotedAt: string
-}
-
 interface ShippingQuoteResponse {
   correoArgentino?: CorreoArgentinoQuote
-  andreani?: AndreaniQuote
-  cacheKey?: string
 }
 
 export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProps) {
@@ -73,6 +64,12 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
       return
     }
 
+    if (!provincia) {
+      setError('Seleccioná una provincia para cotizar')
+      setResult(null)
+      return
+    }
+
     setCpInvalid(false)
     setError(null)
     setResult(null)
@@ -84,7 +81,7 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cp,
-          ...(provincia ? { provincia } : {}),
+          provincia,
           items: [{ variantId, quantity: 1 }],
         }),
       })
@@ -217,26 +214,11 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
               </div>
             )}
 
-            {result?.andreani && (
-              <div className="space-y-2 border-t pt-3">
-                <p className="font-medium">Andreani</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    Envío a domicilio
-                    <span className="block text-xs">
-                      {result.andreani.estimatedDays}
-                    </span>
-                  </span>
-                  <PriceDisplay centavos={result.andreani.price} size="sm" />
-                </div>
-              </div>
-            )}
           </div>
 
           <p className="text-muted-foreground">
             Ofrecemos envíos con{' '}
-            <strong className="text-foreground">Correo Argentino</strong> y{' '}
-            <strong className="text-foreground">Andreani</strong>.
+            <strong className="text-foreground">Correo Argentino</strong>.
           </p>
 
           <div className="space-y-1.5">
@@ -254,18 +236,8 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
             <p className="font-medium">Correo Argentino</p>
             <ul className="space-y-1 text-muted-foreground pl-1">
               <li>
-                • <strong className="text-foreground">PAQ.AR Expreso</strong> — 1 a 3 días hábiles (una vez despachado)
-              </li>
-              <li>
                 • <strong className="text-foreground">PAQ.AR Clásico</strong> — 2 a 5 días hábiles (una vez despachado)
               </li>
-            </ul>
-          </div>
-
-          <div className="space-y-1.5">
-            <p className="font-medium">Andreani</p>
-            <ul className="space-y-1 text-muted-foreground pl-1">
-              <li>• Te enviamos el link de pago y elegís la modalidad dentro de Andreani.</li>
             </ul>
           </div>
         </AccordionContent>
