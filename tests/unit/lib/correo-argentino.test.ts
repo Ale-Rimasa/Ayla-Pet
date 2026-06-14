@@ -248,4 +248,26 @@ describe('filterAgenciesByPostalCode', () => {
     const result = filterAgenciesByPostalCode(AGENCIES, '9999')
     expect(result.some((a) => a.code === 'B-0004')).toBe(true)
   })
+
+  // El postalCode real de /agencies viene en formato CPA (letra + 4 dígitos + 3 letras),
+  // mientras el cliente ingresa el CP clásico de 4 dígitos.
+  const CPA_AGENCIES = [
+    { code: 'B-1001', name: 'Sucursal A', address: 'Av 1', postalCode: 'B1650BFG' },
+    { code: 'B-1002', name: 'Sucursal B', address: 'Av 2', postalCode: 'B1670XYZ' },
+    { code: 'B-1003', name: 'Sucursal C', address: 'Av 3', postalCode: 'C1425ABC' },
+  ]
+
+  it('match exacto contra postalCode en formato CPA (extrae los 4 dígitos)', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    const result = filterAgenciesByPostalCode(CPA_AGENCIES, '1670')
+    expect(result).toHaveLength(1)
+    expect(result[0]?.code).toBe('B-1002')
+  })
+
+  it('prefijo de 2 dígitos contra CPA cuando no hay match exacto', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    // '1699' no matchea exacto, pero '16' es prefijo de 1650 y 1670 (no de 1425)
+    const result = filterAgenciesByPostalCode(CPA_AGENCIES, '1699')
+    expect(result.map((a) => a.code).sort()).toEqual(['B-1001', 'B-1002'])
+  })
 })

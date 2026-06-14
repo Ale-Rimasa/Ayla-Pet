@@ -181,12 +181,21 @@ export function arToMicorreoProvinceCode(arCode: string): string | null {
  *
  * Función pura, sin I/O — corre server-side sobre el array de `getAgencies`.
  */
+function extractFourDigitCp(value: string | undefined | null): string | undefined {
+  return value?.match(/\d{4}/)?.[0]
+}
+
 export function filterAgenciesByPostalCode(agencies: Agency[], cp: string): Agency[] {
-  const exact = agencies.filter((a) => a.postalCode === cp)
+  // Las agencias devuelven el CP en formato CPA (ej. "B1650BFG"); el cliente
+  // ingresa el CP clásico de 4 dígitos. Normalizamos ambos al núcleo numérico.
+  const target = extractFourDigitCp(cp)
+  if (!target) return agencies
+
+  const exact = agencies.filter((a) => extractFourDigitCp(a.postalCode) === target)
   if (exact.length > 0) return exact
 
-  const prefix = cp.slice(0, 2)
-  const byPrefix = agencies.filter((a) => a.postalCode?.startsWith(prefix))
+  const prefix = target.slice(0, 2)
+  const byPrefix = agencies.filter((a) => extractFourDigitCp(a.postalCode)?.startsWith(prefix))
   if (byPrefix.length > 0) return byPrefix
 
   return agencies
