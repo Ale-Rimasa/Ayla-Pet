@@ -114,7 +114,7 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
 
   return (
     <Accordion multiple={false}>
-      <AccordionItem value="envio" className="border rounded-lg px-4">
+      <AccordionItem value="envio" className="border-2 border-foreground/80 rounded-lg px-4">
         <AccordionTrigger className="py-4 no-underline hover:no-underline">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Truck className="h-4 w-4 text-muted-foreground" />
@@ -165,7 +165,7 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
                   </div>
                 </div>
 
-                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-[#cca881] text-[#3a2c1a] hover:bg-[#b89774]">
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -3,6 +3,7 @@
 import { ShoppingCart } from 'lucide-react'
 import { useCartStore } from '@/store/cart.store'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import type { CartItem } from '@/types'
 
 interface AddToCartButtonProps {
@@ -39,7 +40,7 @@ export function AddToCartButton({
     <Button
       onClick={handleClick}
       disabled={disabled}
-      className={className}
+      className={cn('bg-[#cca881] text-[#3a2c1a] hover:bg-[#b89774]', className)}
       size="lg"
     >
       <ShoppingCart className="mr-2 h-4 w-4" aria-hidden="true" />

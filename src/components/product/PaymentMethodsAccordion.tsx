@@ -12,7 +12,7 @@ import {
 export function PaymentMethodsAccordion() {
   return (
     <Accordion multiple={false}>
-      <AccordionItem value="pago" className="border rounded-lg px-4">
+      <AccordionItem value="pago" className="border-2 border-foreground/80 rounded-lg px-4">
         <AccordionTrigger className="py-4 no-underline hover:no-underline">
           <div className="flex items-center gap-2 text-sm font-medium">
             <CreditCard className="h-4 w-4 text-muted-foreground" />

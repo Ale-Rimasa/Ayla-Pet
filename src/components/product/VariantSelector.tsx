@@ -34,8 +34,8 @@ export function VariantSelector({
               className={cn(
                 'rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
                 isSelected
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-foreground hover:border-primary',
+                  ? 'border-[#cca881] bg-[#cca881] text-[#3a2c1a]'
+                  : 'border-border bg-background text-foreground hover:border-[#cca881]',
                 outOfStock && 'cursor-not-allowed opacity-40 line-through'
               )}
               aria-pressed={isSelected}
