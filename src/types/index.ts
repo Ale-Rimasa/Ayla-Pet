@@ -125,6 +125,10 @@ export interface CreateOrderPayload {
   notes?: string
   engravingText?: string
   shippingPackages?: import('@/types/shipping').ShippingPackageSnapshot[]
+  deliveredType?: 'D' | 'S'
+  productType?: 'CP' | 'EP'
+  agencyCode?: string | null
+  agencySnapshot?: import('@/lib/correo-argentino').Agency | null
 }
 
 export interface GetProductsOptions {

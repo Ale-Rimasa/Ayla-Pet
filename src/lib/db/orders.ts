@@ -4,10 +4,11 @@ import { requireAdmin } from '@/lib/auth'
 import type { Order, OrderItem, OrderStatus, CreateOrderPayload } from '@/types'
 import type { Database, Json } from '@/types/database'
 
-// Extraemos el overload con p_shipping_packages para tipado seguro del RPC.
+// Extraemos el overload con los params de Fase 2 (agencia de destino) para
+// tipado seguro del RPC — es la firma más reciente (19 args).
 type CreateOrderArgs = Extract<
   Database['public']['Functions']['create_order'],
-  { Args: { p_shipping_packages?: Json } }
+  { Args: { p_shipping_agency_snapshot?: Json } }
 >['Args']
 
 interface DbOrderItem {
@@ -159,6 +160,11 @@ export async function createOrder(
       length_mm: pkg.lengthMm,
     })),
     p_engraving_text: payload.engravingText ?? null,
+    // Fulfillment de envío (Fase 2): tipo de entrega/producto + agencia destino.
+    p_shipping_delivered_type: payload.deliveredType ?? null,
+    p_shipping_product_type: payload.productType ?? null,
+    p_shipping_agency_code: payload.agencyCode ?? null,
+    p_shipping_agency_snapshot: (payload.agencySnapshot ?? null) as Json,
   }
 
   const { data, error } = await supabase.rpc('create_order', params as CreateOrderArgs)
