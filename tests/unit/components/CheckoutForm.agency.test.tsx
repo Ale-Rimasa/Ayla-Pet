@@ -4,9 +4,8 @@ import { CheckoutForm } from '@/components/checkout/CheckoutForm'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
 
-// El Select de Base UI necesita PointerEvents reales que jsdom no implementa
-// (la interacción real se cubre con Playwright). Acá lo reemplazamos por un
-// <select> nativo para poder testear la lógica del componente.
+// El Select de Base UI necesita PointerEvents reales que jsdom no implementa.
+// Reemplazamos por <select> nativo (mismo patrón que CheckoutForm.test.tsx).
 // `name` distingue el selector de provincia (sin name) del de agencia
 // (name="agencyCode"), seteado explícitamente en CheckoutForm.tsx.
 vi.mock('@/components/ui/select', async () => {
@@ -65,32 +64,14 @@ const QUOTE_RESPONSE = {
   },
 }
 
-// Variante con Expreso no disponible en ninguna zona (solo Clásico)
-const QUOTE_RESPONSE_SOLO_CLASICO = {
-  correoArgentino: {
-    domicilio: {
-      clasico: { priceCentavos: 620100, diasMin: '2', diasMax: '5' },
-      expreso: null,
-    },
-    sucursal: {
-      clasico: { priceCentavos: 368600, diasMin: '1', diasMax: '3' },
-      expreso: null,
-    },
-    rateSource: 'mock',
-    quotedAt: '',
-  },
-}
-
-// Normaliza espacios (incluido NBSP) para comparar con el texto renderizado
-const normalizeSpaces = (s: string) => s.replace(/\s/g, ' ')
-
-// Fase 2: agencia de destino — usada por los tests que eligen sucursal y
-// necesitan completar el selector obligatorio para poder enviar el pedido.
 const AGENCIES_RESPONSE = {
   agencies: [
     { code: 'B-0123', name: 'Sucursal La Plata Centro', address: 'Calle 7 1234', postalCode: '1900' },
+    { code: 'B-0456', name: 'Sucursal La Plata Norte', address: 'Av. 44 567', postalCode: '1900' },
   ],
 }
+
+const normalizeSpaces = (s: string) => s.replace(/\s/g, ' ')
 
 function mockFetch(handlers: {
   quote?: { status: number; body: unknown }
@@ -120,7 +101,7 @@ function fillAddress() {
   fireEvent.change(screen.getByLabelText(/calle y número/i), { target: { value: 'Corrientes 1234' } })
   fireEvent.change(screen.getByLabelText(/ciudad/i), { target: { value: 'CABA' } })
   fireEvent.change(screen.getByTestId('provincia-select'), { target: { value: 'AR-B' } })
-  fireEvent.change(screen.getByLabelText(/código postal/i), { target: { value: '1704' } })
+  fireEvent.change(screen.getByLabelText(/código postal/i), { target: { value: '1900' } })
 }
 
 function fillCustomer() {
@@ -147,8 +128,8 @@ beforeEach(() => {
   useCheckoutStore.setState({ customerInfo: null, shippingAddress: null })
 })
 
-describe('CheckoutForm — método de envío y total', () => {
-  it('cotiza automáticamente cuando CP y provincia están completos y muestra precios', async () => {
+describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
+  it('no muestra el selector de agencia ni consulta /api/shipping/agencies para domicilio (default)', async () => {
     const fetchMock = mockFetch({})
     render(<CheckoutForm />)
 
@@ -158,47 +139,43 @@ describe('CheckoutForm — método de envío y total', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/shipping/quote', expect.anything())
     }, { timeout: 3000 })
 
-    await waitFor(() => {
-      expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
-      expect(screen.getByText(normalizeSpaces('$ 3.686'))).toBeInTheDocument()
-    })
-
-    const quoteCall = fetchMock.mock.calls.find(([u]) => u === '/api/shipping/quote')!
-    const body = JSON.parse((quoteCall[1] as RequestInit).body as string)
-    expect(body).toEqual({
-      cp: '1704',
-      provincia: 'AR-B',
-      items: [{ variantId: VARIANT_ID, quantity: 1 }],
-    })
+    expect(screen.queryByTestId('agency-select')).not.toBeInTheDocument()
+    expect(
+      fetchMock.mock.calls.some(([u]) => typeof u === 'string' && u.startsWith('/api/shipping/agencies'))
+    ).toBe(false)
   })
 
-  it('el total del resumen suma subtotal + envío según el método elegido', async () => {
-    mockFetch({})
+  it('muestra el selector de agencia y lo puebla al elegir sucursal con provincia/CP válidos', async () => {
+    const fetchMock = mockFetch({})
     render(<CheckoutForm />)
 
     fillAddress()
 
-    // Domicilio Clásico es el default: 5000,00 + 6201,00 = 11201,00
     await waitFor(() => {
-      expect(screen.getByText(normalizeSpaces('$ 11.201'))).toBeInTheDocument()
+      expect(screen.getByLabelText(/a sucursal — clásico/i)).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    // Cambio a sucursal Clásico: 5000,00 + 3686,00 = 8686,00
     fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
+
     await waitFor(() => {
-      expect(screen.getByText(normalizeSpaces('$ 8.686'))).toBeInTheDocument()
+      expect(
+        fetchMock.mock.calls.some(([u]) => typeof u === 'string' && u.startsWith('/api/shipping/agencies'))
+      ).toBe(true)
+    }, { timeout: 3000 })
+
+    const agenciesCall = fetchMock.mock.calls.find(([u]) => typeof u === 'string' && u.startsWith('/api/shipping/agencies'))!
+    expect(agenciesCall[0]).toContain('provincia=AR-B')
+    expect(agenciesCall[0]).toContain('cp=1900')
+
+    await waitFor(() => {
+      const select = screen.getByTestId('agency-select')
+      expect(select).toBeInTheDocument()
+      expect(screen.getByText(/sucursal la plata centro/i)).toBeInTheDocument()
+      expect(screen.getByText(/sucursal la plata norte/i)).toBeInTheDocument()
     })
   })
 
-  it('sin cotización el resumen muestra "A calcular" y no rompe', () => {
-    mockFetch({})
-    render(<CheckoutForm />)
-
-    expect(screen.getByText('A calcular')).toBeInTheDocument()
-    expect(screen.getByText(/completá el código postal/i)).toBeInTheDocument()
-  })
-
-  it('envía clientShippingCost del método elegido al crear el pedido', async () => {
+  it('bloquea el submit sin elegir agencia cuando es sucursal', async () => {
     const fetchMock = mockFetch({})
     vi.stubGlobal('open', vi.fn())
     render(<CheckoutForm />)
@@ -207,78 +184,26 @@ describe('CheckoutForm — método de envío y total', () => {
     fillAddress()
 
     await waitFor(() => {
-      expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
+      expect(screen.getByLabelText(/a sucursal — clásico/i)).toBeInTheDocument()
     }, { timeout: 3000 })
 
     fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
 
-    // Fase 2: sucursal requiere elegir una agencia de destino antes de enviar.
     await waitFor(() => {
       expect(screen.getByTestId('agency-select')).toBeInTheDocument()
     })
-    fireEvent.change(screen.getByTestId('agency-select'), { target: { value: 'B-0123' } })
 
     fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
-    }, { timeout: 3000 })
-
-    const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
-    const body = JSON.parse((orderCall[1] as RequestInit).body as string)
-    expect(body.shippingMethod).toBe('correo-argentino-sucursal')
-    expect(body.productType).toBe('CP')
-    expect(body.clientShippingCost).toBe(368600)
-  })
-
-  it('renderiza 4 opciones de envío cuando las 4 combinaciones están disponibles', async () => {
-    mockFetch({})
-    render(<CheckoutForm />)
-
-    fillAddress()
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
-    }, { timeout: 3000 })
-
-    expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/correo argentino a sucursal — expreso/i)).toBeInTheDocument()
-  })
-
-  it('oculta Expreso cuando la cotización no lo incluye para ninguna zona', async () => {
-    mockFetch({ quote: { status: 200, body: QUOTE_RESPONSE_SOLO_CLASICO } })
-    render(<CheckoutForm />)
-
-    fillAddress()
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
-    }, { timeout: 3000 })
-
-    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
-    expect(screen.queryByText(/expreso/i)).not.toBeInTheDocument()
-  })
-
-  it('seleccionar Domicilio Expreso actualiza el Total a subtotal + domicilio.expreso', async () => {
-    mockFetch({})
-    render(<CheckoutForm />)
-
-    fillAddress()
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
-    }, { timeout: 3000 })
-
-    fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
-
-    // 5000,00 (subtotal) + 9500,00 (domicilio.expreso) = 14500,00
-    await waitFor(() => {
-      expect(screen.getByText(normalizeSpaces('$ 14.500'))).toBeInTheDocument()
+      expect(screen.getByText(/eleg[ií].*sucursal/i)).toBeInTheDocument()
     })
+
+    expect(fetchMock.mock.calls.some(([u]) => u === '/api/orders')).toBe(false)
+    expect(vi.mocked(window.open)).not.toHaveBeenCalled()
   })
 
-  it('al confirmar con Domicilio Expreso seleccionado, envía shippingMethod=domicilio y productType=EP', async () => {
+  it('al elegir una agencia y enviar, el body incluye agencyCode y agencySnapshot y el costo de envío no cambia', async () => {
     const fetchMock = mockFetch({})
     vi.stubGlobal('open', vi.fn())
     render(<CheckoutForm />)
@@ -287,10 +212,26 @@ describe('CheckoutForm — método de envío y total', () => {
     fillAddress()
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/a sucursal — clásico/i)).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
+    fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('agency-select')).toBeInTheDocument()
+      expect(screen.getByText(/sucursal la plata centro/i)).toBeInTheDocument()
+    })
+
+    // Precio antes de elegir agencia
+    await waitFor(() => {
+      expect(screen.getAllByText(normalizeSpaces('$ 3.686')).length).toBeGreaterThan(0)
+    })
+
+    fireEvent.change(screen.getByTestId('agency-select'), { target: { value: 'B-0123' } })
+
+    // El precio mostrado no cambia tras elegir la agencia
+    expect(screen.getAllByText(normalizeSpaces('$ 3.686')).length).toBeGreaterThan(0)
+
     fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
 
     await waitFor(() => {
@@ -299,28 +240,13 @@ describe('CheckoutForm — método de envío y total', () => {
 
     const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
     const body = JSON.parse((orderCall[1] as RequestInit).body as string)
-    expect(body.shippingMethod).toBe('correo-argentino-domicilio')
-    expect(body.productType).toBe('EP')
-    expect(body.clientShippingCost).toBe(950000)
+    expect(body.agencyCode).toBe('B-0123')
+    expect(body.agencySnapshot).toEqual(AGENCIES_RESPONSE.agencies[0])
+    expect(body.shippingMethod).toBe('correo-argentino-sucursal')
   })
 
-  it('la opción seleccionada por default es Domicilio Clásico', async () => {
-    mockFetch({})
-    render(<CheckoutForm />)
-
-    fillAddress()
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
-    }, { timeout: 3000 })
-
-    expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeChecked()
-  })
-
-  it('ante un 409 shipping_price_changed re-cotiza y pide reconfirmar sin crear pedido', async () => {
-    const fetchMock = mockFetch({
-      orders: { status: 409, body: { error: 'shipping_price_changed', newShippingCost: 700000 } },
-    })
+  it('no envía agencyCode/agencySnapshot para domicilio', async () => {
+    const fetchMock = mockFetch({})
     vi.stubGlobal('open', vi.fn())
     render(<CheckoutForm />)
 
@@ -334,12 +260,45 @@ describe('CheckoutForm — método de envío y total', () => {
     fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/el costo de envío se actualizó/i)).toBeInTheDocument()
+      expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
     }, { timeout: 3000 })
 
-    expect(vi.mocked(window.open)).not.toHaveBeenCalled()
-    // Re-cotizó tras el 409
-    const quoteCalls = fetchMock.mock.calls.filter(([u]) => u === '/api/shipping/quote')
-    expect(quoteCalls.length).toBeGreaterThanOrEqual(2)
+    const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
+    const body = JSON.parse((orderCall[1] as RequestInit).body as string)
+    expect(body).not.toHaveProperty('agencyCode')
+    expect(body).not.toHaveProperty('agencySnapshot')
+  })
+
+  it('muestra estado degradado y mantiene el submit bloqueado si /api/shipping/agencies falla', async () => {
+    const fetchMock = mockFetch({ agencies: { status: 502, body: { error: 'agencies_unavailable' } } })
+    vi.stubGlobal('open', vi.fn())
+    render(<CheckoutForm />)
+
+    fillCustomer()
+    fillAddress()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/a sucursal — clásico/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([u]) => typeof u === 'string' && u.startsWith('/api/shipping/agencies'))
+      ).toBe(true)
+    }, { timeout: 3000 })
+
+    await waitFor(() => {
+      expect(screen.getByText(/no.*pudimos.*sucursales|no hay sucursales disponibles/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/eleg[ií].*sucursal/i)).toBeInTheDocument()
+    })
+
+    expect(fetchMock.mock.calls.some(([u]) => u === '/api/orders')).toBe(false)
   })
 })

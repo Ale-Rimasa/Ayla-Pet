@@ -13,7 +13,7 @@ import { CheckoutSchema } from '@/lib/validations'
 import type { CheckoutFormValues } from '@/lib/validations'
 import { formatPrice } from '@/lib/utils'
 import { AR_PROVINCES_LIST } from '@/lib/constants'
-import type { CorreoArgentinoQuote } from '@/lib/correo-argentino'
+import type { CorreoArgentinoQuote, Agency } from '@/lib/correo-argentino'
 import { uploadOrderReferencePhoto } from '@/lib/actions/order-photos'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -173,6 +173,12 @@ export function CheckoutForm() {
   // Default: primera combinación presente, preferencia domicilio.clasico.
   const [shippingSelection, setShippingSelection] = useState<ShippingSelection>('domicilio:clasico')
 
+  // Sucursal de destino (Fase 2): solo se usa cuando selectedGroup === 'sucursal'.
+  const [agencies, setAgencies] = useState<Agency[]>([])
+  const [agenciesLoading, setAgenciesLoading] = useState(false)
+  const [agenciesError, setAgenciesError] = useState<string | null>(null)
+  const [agencyCode, setAgencyCode] = useState<string | null>(null)
+
   // Photo state — held outside RHF (File is not serializable/SSR-safe for Zod)
   const [photos, setPhotos] = useState<PhotoPreview[]>([])
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -282,6 +288,55 @@ export function CheckoutForm() {
     return () => clearTimeout(timer)
   }, [postalCode, province, items, fetchQuote])
 
+  // ── Sucursal de destino (Fase 2) ───────────────────────────────────────────
+
+  const selectedAgency = agencies.find((a) => a.code === agencyCode) ?? null
+
+  const fetchAgencies = useCallback(async (cp: string, prov: string) => {
+    setAgenciesLoading(true)
+    setAgenciesError(null)
+    try {
+      const res = await fetch(`/api/shipping/agencies?provincia=${prov}&cp=${cp}`)
+
+      if (!res.ok) {
+        setAgencies([])
+        setAgenciesError('No pudimos cargar las sucursales. Probá de nuevo en un momento.')
+        return
+      }
+
+      const data = await res.json() as { agencies?: Agency[] }
+      setAgencies(data.agencies ?? [])
+      if (!data.agencies || data.agencies.length === 0) {
+        setAgenciesError('No hay sucursales disponibles para esta zona.')
+      }
+    } catch {
+      setAgencies([])
+      setAgenciesError('No pudimos cargar las sucursales. Probá de nuevo en un momento.')
+    } finally {
+      setAgenciesLoading(false)
+    }
+  }, [])
+
+  // Reset de la sucursal elegida al cambiar de grupo, provincia o CP — la
+  // sucursal previa puede no existir en la nueva lista.
+  useEffect(() => {
+    setAgencyCode(null)
+    setAgencies([])
+    setAgenciesError(null)
+  }, [selectedGroup, postalCode, province])
+
+  useEffect(() => {
+    if (selectedGroup !== 'sucursal' || !CP_REGEX.test(postalCode ?? '') || !province) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void fetchAgencies(postalCode, province)
+    }, QUOTE_DEBOUNCE_MS)
+
+    return () => clearTimeout(timer)
+  }, [selectedGroup, postalCode, province, fetchAgencies])
+
   // ── Photo helpers ──────────────────────────────────────────────────────────
 
   const handleAddClick = useCallback(() => {
@@ -333,6 +388,11 @@ export function CheckoutForm() {
     const valid = await trigger(FORM_FIELDS as Parameters<typeof trigger>[0])
     if (!valid) return
 
+    if (selectedGroup === 'sucursal' && !selectedAgency) {
+      setError('Elegí una sucursal de destino para continuar.')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
     setPhotoNotice(null)
@@ -355,6 +415,9 @@ export function CheckoutForm() {
           ...(selectedShippingCost !== undefined ? { clientShippingCost: selectedShippingCost } : {}),
           observations: data.observations,
           engravingText: data.engravingText || undefined,
+          ...(selectedGroup === 'sucursal' && selectedAgency
+            ? { agencyCode: selectedAgency.code, agencySnapshot: selectedAgency }
+            : {}),
         }),
       })
 
@@ -560,6 +623,38 @@ export function CheckoutForm() {
                 )
               })}
             </div>
+
+            {/* ── Selector de sucursal de destino (solo si grupo = sucursal) ── */}
+            {selectedGroup === 'sucursal' && (
+              <div className="mt-4 space-y-1.5">
+                <Label htmlFor="agency">Sucursal de destino</Label>
+
+                {agenciesLoading && (
+                  <p className="text-sm text-muted-foreground" role="status">Buscando sucursales...</p>
+                )}
+
+                {!agenciesLoading && agenciesError && (
+                  <p className="text-sm text-amber-700" role="alert">{agenciesError}</p>
+                )}
+
+                {!agenciesLoading && agencies.length > 0 && (
+                  <Select name="agencyCode" value={agencyCode ?? ''} onValueChange={setAgencyCode}>
+                    <SelectTrigger id="agency" className="w-full">
+                      <span className={!agencyCode ? 'text-sm text-muted-foreground' : 'text-sm'}>
+                        {selectedAgency ? selectedAgency.name : 'Seleccioná una sucursal'}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencies.map((agency) => (
+                        <SelectItem key={agency.code} value={agency.code}>
+                          {agency.name} — {agency.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
           </section>
 
           <Separator />
