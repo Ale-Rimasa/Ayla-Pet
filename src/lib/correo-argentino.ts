@@ -35,6 +35,31 @@ export interface CorreoArgentinoQuote {
   quotedAt: string
 }
 
+/**
+ * Sucursal de Correo Argentino (MiCorreo). Lo que se MUESTRA en el selector de
+ * checkout y lo que se PERSISTE como `shipping_agency_snapshot` son el MISMO
+ * objeto — no hay un tipo separado de snapshot (decisión de diseño, Fase 2).
+ */
+export interface Agency {
+  code: string
+  name: string
+  address: string
+  locality?: string
+  city?: string
+  province?: string
+  postalCode?: string
+  phone?: string
+  services?: {
+    packageReception?: boolean
+    pickupAvailability?: boolean
+  }
+  hours?: {
+    day?: string
+    hourFrom?: string
+    hourTo?: string
+  }[]
+}
+
 // ─── Errores ──────────────────────────────────────────────────────────────────
 
 export class CorreoArgentinoConfigError extends Error {
@@ -97,6 +122,74 @@ export async function getCorreoArgentinoQuote(
   }
 
   return getMockQuote()
+}
+
+// ─── Mapeo de provincia AR-X → código MiCorreo (1 letra) ──────────────────────
+
+/**
+ * AR-X (ISO 3166-2:AR, usado en checkout) → provinceCode de MiCorreo (1 letra).
+ *
+ * MiCorreo usa la MISMA letra que el sufijo ISO para las 24 jurisdicciones,
+ * pero se define explícito (no derivado de `AR_PROVINCES`) para no acoplarse
+ * a esa coincidencia — si MiCorreo cambia algún código, se ajusta solo acá.
+ */
+export const AR_PROVINCE_TO_MICORREO: Record<string, string> = {
+  'AR-B': 'B', // Buenos Aires
+  'AR-C': 'C', // Ciudad Autónoma de Buenos Aires
+  'AR-K': 'K', // Catamarca
+  'AR-H': 'H', // Chaco
+  'AR-U': 'U', // Chubut
+  'AR-X': 'X', // Córdoba
+  'AR-W': 'W', // Corrientes
+  'AR-E': 'E', // Entre Ríos
+  'AR-P': 'P', // Formosa
+  'AR-Y': 'Y', // Jujuy
+  'AR-L': 'L', // La Pampa
+  'AR-F': 'F', // La Rioja
+  'AR-M': 'M', // Mendoza
+  'AR-N': 'N', // Misiones
+  'AR-Q': 'Q', // Neuquén
+  'AR-R': 'R', // Río Negro
+  'AR-A': 'A', // Salta
+  'AR-J': 'J', // San Juan
+  'AR-D': 'D', // San Luis
+  'AR-Z': 'Z', // Santa Cruz
+  'AR-S': 'S', // Santa Fe
+  'AR-G': 'G', // Santiago del Estero
+  'AR-V': 'V', // Tierra del Fuego
+  'AR-T': 'T', // Tucumán
+}
+
+/**
+ * Mapea un código de provincia de checkout (`AR-X`) al código MiCorreo de
+ * 1 letra. Devuelve `null` si la provincia no es reconocida — el caller (route)
+ * debe responder 400 sin llamar a MiCorreo.
+ */
+export function arToMicorreoProvinceCode(arCode: string): string | null {
+  return AR_PROVINCE_TO_MICORREO[arCode] ?? null
+}
+
+// ─── Filtrado de agencias por código postal ───────────────────────────────────
+
+/**
+ * Filtra agencias por código postal del destinatario:
+ *  1. Match exacto (`postalCode === cp`).
+ *  2. Si no hay match exacto, fallback a prefijo de 2 dígitos
+ *     (`postalCode?.startsWith(cp.slice(0, 2))`).
+ *  3. Si tampoco hay match por prefijo, devuelve TODAS las agencias recibidas
+ *     (la provincia completa) — sin orden geográfico (out-of-scope).
+ *
+ * Función pura, sin I/O — corre server-side sobre el array de `getAgencies`.
+ */
+export function filterAgenciesByPostalCode(agencies: Agency[], cp: string): Agency[] {
+  const exact = agencies.filter((a) => a.postalCode === cp)
+  if (exact.length > 0) return exact
+
+  const prefix = cp.slice(0, 2)
+  const byPrefix = agencies.filter((a) => a.postalCode?.startsWith(prefix))
+  if (byPrefix.length > 0) return byPrefix
+
+  return agencies
 }
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────

@@ -168,3 +168,84 @@ describe('getCorreoArgentinoQuote — config guards', () => {
     }
   ))
 })
+
+// ─── arToMicorreoProvinceCode / AR_PROVINCE_TO_MICORREO ─────────────────────
+
+describe('arToMicorreoProvinceCode', () => {
+  it('mapea AR-B (Buenos Aires) a "B"', async () => {
+    const { arToMicorreoProvinceCode } = await import('@/lib/correo-argentino')
+    expect(arToMicorreoProvinceCode('AR-B')).toBe('B')
+  })
+
+  it('mapea AR-C (CABA) a "C"', async () => {
+    const { arToMicorreoProvinceCode } = await import('@/lib/correo-argentino')
+    expect(arToMicorreoProvinceCode('AR-C')).toBe('C')
+  })
+
+  it('mapea AR-X (Córdoba) a "X"', async () => {
+    const { arToMicorreoProvinceCode } = await import('@/lib/correo-argentino')
+    expect(arToMicorreoProvinceCode('AR-X')).toBe('X')
+  })
+
+  it('devuelve null para un código de provincia desconocido', async () => {
+    const { arToMicorreoProvinceCode } = await import('@/lib/correo-argentino')
+    expect(arToMicorreoProvinceCode('AR-ZZ')).toBeNull()
+  })
+
+  it('AR_PROVINCE_TO_MICORREO tiene exactamente 24 jurisdicciones', async () => {
+    const { AR_PROVINCE_TO_MICORREO } = await import('@/lib/correo-argentino')
+    expect(Object.keys(AR_PROVINCE_TO_MICORREO)).toHaveLength(24)
+  })
+
+  it('AR_PROVINCE_TO_MICORREO usa claves AR-X y valores de 1 letra', async () => {
+    const { AR_PROVINCE_TO_MICORREO } = await import('@/lib/correo-argentino')
+    for (const [key, value] of Object.entries(AR_PROVINCE_TO_MICORREO)) {
+      expect(key).toMatch(/^AR-[A-Z]+$/)
+      expect(value).toMatch(/^[A-Z]$/)
+    }
+  })
+})
+
+// ─── filterAgenciesByPostalCode ─────────────────────────────────────────────
+
+describe('filterAgenciesByPostalCode', () => {
+  const AGENCIES = [
+    { code: 'B-0001', name: 'Sucursal Centro', address: 'Calle 1 100', postalCode: '1900' },
+    { code: 'B-0002', name: 'Sucursal Norte', address: 'Calle 2 200', postalCode: '1901' },
+    { code: 'B-0003', name: 'Sucursal Sur', address: 'Calle 3 300', postalCode: '2000' },
+    { code: 'B-0004', name: 'Sucursal Sin CP', address: 'Calle 4 400' },
+  ]
+
+  it('match exacto: devuelve solo las agencias con postalCode === cp', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    const result = filterAgenciesByPostalCode(AGENCIES, '1900')
+    expect(result).toHaveLength(1)
+    expect(result[0]?.code).toBe('B-0001')
+  })
+
+  it('fallback a prefijo de 2 dígitos cuando no hay match exacto', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    // '1955' no matchea exacto a ninguna, pero '19' es prefijo de 1900 y 1901
+    const result = filterAgenciesByPostalCode(AGENCIES, '1955')
+    expect(result).toHaveLength(2)
+    expect(result.map((a) => a.code).sort()).toEqual(['B-0001', 'B-0002'])
+  })
+
+  it('fallback a TODAS las agencias cuando no hay match exacto ni por prefijo', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    const result = filterAgenciesByPostalCode(AGENCIES, '9999')
+    expect(result).toHaveLength(AGENCIES.length)
+  })
+
+  it('array de agencias vacío devuelve array vacío sin lanzar', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    const result = filterAgenciesByPostalCode([], '1900')
+    expect(result).toEqual([])
+  })
+
+  it('agencias sin postalCode no matchean por exacto ni prefijo, pero entran en el fallback completo', async () => {
+    const { filterAgenciesByPostalCode } = await import('@/lib/correo-argentino')
+    const result = filterAgenciesByPostalCode(AGENCIES, '9999')
+    expect(result.some((a) => a.code === 'B-0004')).toBe(true)
+  })
+})
