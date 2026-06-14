@@ -5,6 +5,7 @@ import { createOrder } from '@/lib/db/orders'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { resolveShippingPackages, packagesToSnapshots } from '@/lib/shipping-package'
 import { getCorreoArgentinoQuote } from '@/lib/correo-argentino'
+import type { Agency } from '@/lib/correo-argentino'
 import { SHIPPING_METHODS } from '@/types/shipping'
 import type { ShippingPackageSnapshot } from '@/types/shipping'
 import type { CreateOrderItemPayload } from '@/types'
@@ -20,6 +21,15 @@ const orderItemSchema = z.object({
   variantId: z.string().uuid(),
   quantity: z.number().int().min(1),
 })
+
+// Snapshot de agencia (Fase 2): mismo shape que `Agency` en correo-argentino.ts.
+// El server NO re-valida contra MiCorreo — confía y persiste el snapshot tal
+// cual lo manda el cliente (decisión firme del dueño). `.passthrough()` permite
+// campos extra sin romper si la forma de `Agency` evoluciona.
+const agencySnapshotSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+}).passthrough()
 
 const bodySchema = z.object({
   customer: z.object({
@@ -44,6 +54,18 @@ const bodySchema = z.object({
   notes: z.string().optional(),
   observations: z.string().max(80).optional(),
   engravingText: z.string().max(20).optional(),
+  // Agencia de destino (Fase 2) — obligatoria si shippingMethod es "-sucursal".
+  agencyCode: z.string().min(1).optional(),
+  agencySnapshot: agencySnapshotSchema.optional(),
+}).superRefine((data, ctx) => {
+  if (data.shippingMethod === 'correo-argentino-sucursal') {
+    if (!data.agencyCode) {
+      ctx.addIssue({ code: 'custom', path: ['agencyCode'], message: 'Sucursal requiere elegir agencia' })
+    }
+    if (!data.agencySnapshot) {
+      ctx.addIssue({ code: 'custom', path: ['agencySnapshot'], message: 'Falta el snapshot de la agencia' })
+    }
+  }
 })
 
 type VariantWithProduct = {
@@ -78,7 +100,14 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { customer, shipping, items, shippingMethod, productType, clientShippingCost, notes, observations, engravingText } = parsed.data
+  const { customer, shipping, items, shippingMethod, productType, clientShippingCost, notes, observations, engravingText, agencyCode, agencySnapshot } = parsed.data
+
+  // Derivar tipo de entrega ('D'=domicilio, 'S'=sucursal) de shippingMethod.
+  // En domicilio, forzar agencyCode/agencySnapshot a null aunque el cliente
+  // los haya enviado (coherencia: domicilio nunca tiene agencia destino).
+  const deliveredType = shippingMethod === 'correo-argentino-sucursal' ? 'S' : 'D'
+  const persistedAgencyCode = deliveredType === 'S' ? agencyCode ?? null : null
+  const persistedAgencySnapshot = deliveredType === 'S' ? agencySnapshot ?? null : null
 
   // 4. Leer precios de variantes desde DB (nunca del cliente)
   const supabase = await createClient()
@@ -207,6 +236,13 @@ export async function POST(request: NextRequest) {
     notes: observations ?? notes,
     engravingText,
     shippingPackages: packageSnapshots,
+    deliveredType,
+    productType,
+    agencyCode: persistedAgencyCode,
+    // El zod de agencySnapshot es laxo (code+name requeridos, .passthrough())
+    // a propósito — el server NO re-valida el shape completo de Agency, solo
+    // persiste lo que el cliente mandó.
+    agencySnapshot: persistedAgencySnapshot as unknown as Agency | null,
   })
 
   if (!result.ok) {

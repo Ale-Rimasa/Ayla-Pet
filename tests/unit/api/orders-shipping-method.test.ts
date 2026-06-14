@@ -55,6 +55,15 @@ vi.mock('@/lib/db/orders', () => ({
 
 const VARIANT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
 
+// Fase 2: sucursal requiere agencyCode + agencySnapshot — usado en los tests
+// de "correo-argentino-sucursal" de esta suite (cost derivation, no es el foco
+// de estos tests, pero el bodySchema lo exige).
+const AGENCY_SNAPSHOT = {
+  code: 'B-0123',
+  name: 'Sucursal La Plata Centro',
+  address: 'Calle 7 1234',
+}
+
 function makeRequest(body: unknown) {
   return new Request('http://localhost/api/orders', {
     method: 'POST',
@@ -163,6 +172,8 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
       ...basePayload,
       shippingMethod: 'correo-argentino-sucursal',
       clientShippingCost: 600000,
+      agencyCode: AGENCY_SNAPSHOT.code,
+      agencySnapshot: AGENCY_SNAPSHOT,
     }) as any)
 
     expect(createOrder).toHaveBeenCalledWith(
@@ -195,6 +206,8 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
       shippingMethod: 'correo-argentino-sucursal',
       productType: 'EP', // quote.sucursal.expreso === null en el mock
       clientShippingCost: 999999,
+      agencyCode: AGENCY_SNAPSHOT.code,
+      agencySnapshot: AGENCY_SNAPSHOT,
     }) as any)
 
     expect(res.status).toBe(422)
@@ -212,6 +225,8 @@ describe('POST /api/orders — correo-argentino-domicilio', () => {
       shippingMethod: 'correo-argentino-sucursal',
       productType: 'CP',
       clientShippingCost: 999999, // distinto de quote.sucursal.clasico.priceCentavos (600000)
+      agencyCode: AGENCY_SNAPSHOT.code,
+      agencySnapshot: AGENCY_SNAPSHOT,
     }) as any)
 
     expect(res.status).toBe(409)
