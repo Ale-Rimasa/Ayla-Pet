@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth'
 import type { Order, OrderItem, OrderStatus, CreateOrderPayload } from '@/types'
 import type { Database, Json } from '@/types/database'
+import type { Agency } from '@/lib/correo-argentino'
 
 // Extraemos el overload con los params de Fase 2 (agencia de destino) para
 // tipado seguro del RPC — es la firma más reciente (19 args).
@@ -41,6 +42,11 @@ interface DbOrder {
   mp_payment_id: string | null
   notes: string | null
   engraving_text: string | null
+  // Fulfillment de envío (Fase 2) — null en pedidos previos a esa fase.
+  shipping_delivered_type: string | null
+  shipping_product_type: string | null
+  shipping_agency_code: string | null
+  shipping_agency_snapshot: Agency | null
   created_at: string
   updated_at: string
   order_items: DbOrderItem[]
@@ -101,6 +107,10 @@ function mapOrder(row: DbOrder): Order {
     mpPaymentId: row.mp_payment_id,
     notes: row.notes,
     engravingText: row.engraving_text ?? undefined,
+    shippingDeliveredType: row.shipping_delivered_type as 'D' | 'S' | null,
+    shippingProductType: row.shipping_product_type as 'CP' | 'EP' | null,
+    shippingAgencyCode: row.shipping_agency_code,
+    shippingAgencySnapshot: row.shipping_agency_snapshot,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

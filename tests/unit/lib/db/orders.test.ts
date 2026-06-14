@@ -219,3 +219,94 @@ describe('customer order queries', () => {
     expect(result).toBeNull()
   })
 })
+
+describe('mapOrder — shipping fulfillment fields (Fase 2)', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  function baseRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id: ORDER_UUID,
+      status: 'paid',
+      customer_name: 'Ana Gomez',
+      customer_email: 'ana@example.com',
+      customer_phone: '1122334455',
+      shipping_street: 'Calle 123',
+      shipping_city: 'CABA',
+      shipping_province: 'Buenos Aires',
+      shipping_postal_code: '1000',
+      subtotal: 1000,
+      shipping_cost: 500,
+      total: 1500,
+      mp_preference_id: null,
+      mp_payment_id: null,
+      notes: null,
+      created_at: '2026-01-02T00:00:00Z',
+      updated_at: '2026-01-02T00:00:00Z',
+      order_items: [],
+      ...overrides,
+    }
+  }
+
+  it('maps shipping_delivered_type, shipping_product_type, shipping_agency_code and shipping_agency_snapshot for a sucursal order', async () => {
+    const agencySnapshot = {
+      code: 'B-0123',
+      name: 'Sucursal La Plata Centro',
+      address: 'Calle 7 1234',
+      locality: 'La Plata',
+      city: 'La Plata',
+      province: 'Buenos Aires',
+      postalCode: '1900',
+    }
+    const row = baseRow({
+      shipping_delivered_type: 'S',
+      shipping_product_type: 'CP',
+      shipping_agency_code: 'B-0123',
+      shipping_agency_snapshot: agencySnapshot,
+    })
+    const { client } = createSupabaseMock({ data: row, error: null })
+    vi.doMock('@/lib/supabase/server', () => ({
+      createClient: vi.fn().mockResolvedValue(client),
+    }))
+    vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
+    vi.doMock('@/lib/auth', () => ({ requireAdmin: vi.fn() }))
+
+    const { getOrderForCustomer } = await import('@/lib/db/orders')
+    const result = await getOrderForCustomer(ORDER_UUID, {
+      id: USER_ID,
+      email: 'ana@example.com',
+    })
+
+    expect(result?.shippingDeliveredType).toBe('S')
+    expect(result?.shippingProductType).toBe('CP')
+    expect(result?.shippingAgencyCode).toBe('B-0123')
+    expect(result?.shippingAgencySnapshot).toEqual(agencySnapshot)
+  })
+
+  it('maps shipping fulfillment fields as null for a domicilio order (pedidos previos a Fase 2)', async () => {
+    const row = baseRow({
+      shipping_delivered_type: null,
+      shipping_product_type: null,
+      shipping_agency_code: null,
+      shipping_agency_snapshot: null,
+    })
+    const { client } = createSupabaseMock({ data: row, error: null })
+    vi.doMock('@/lib/supabase/server', () => ({
+      createClient: vi.fn().mockResolvedValue(client),
+    }))
+    vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
+    vi.doMock('@/lib/auth', () => ({ requireAdmin: vi.fn() }))
+
+    const { getOrderForCustomer } = await import('@/lib/db/orders')
+    const result = await getOrderForCustomer(ORDER_UUID, {
+      id: USER_ID,
+      email: 'ana@example.com',
+    })
+
+    expect(result?.shippingDeliveredType).toBeNull()
+    expect(result?.shippingProductType).toBeNull()
+    expect(result?.shippingAgencyCode).toBeNull()
+    expect(result?.shippingAgencySnapshot).toBeNull()
+  })
+})

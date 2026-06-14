@@ -54,6 +54,11 @@ export interface Order {
   mpPaymentId: string | null
   notes: string | null
   engravingText?: string
+  // Fulfillment de envío (Fase 2) — null en pedidos previos a esa fase.
+  shippingDeliveredType?: 'D' | 'S' | null
+  shippingProductType?: 'CP' | 'EP' | null
+  shippingAgencyCode?: string | null
+  shippingAgencySnapshot?: import('@/lib/correo-argentino').Agency | null
   createdAt: string
   updatedAt: string
 }
