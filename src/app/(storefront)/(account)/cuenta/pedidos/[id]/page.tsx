@@ -5,6 +5,7 @@ import { CheckCircle2, Circle } from 'lucide-react'
 import { requireCustomer } from '@/lib/auth'
 import { getOrderForCustomer } from '@/lib/db/orders'
 import { formatPrice } from '@/lib/utils'
+import { getShippingMethodLabel, getShippingSpeedLabel } from '@/lib/order-shipping-display'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import type { OrderStatus } from '@/types'
@@ -116,6 +117,39 @@ export default async function PedidoDetailPage({ params }: PedidoDetailPageProps
               <p>{order.shippingAddress.city}, {order.shippingAddress.province}</p>
               <p>CP {order.shippingAddress.postalCode}</p>
             </div>
+            {(() => {
+              const methodLabel = getShippingMethodLabel(order.shippingDeliveredType)
+              const speedLabel = getShippingSpeedLabel(order.shippingProductType)
+              if (!methodLabel) return null
+
+              return (
+                <>
+                  <Separator />
+                  <div className="space-y-1">
+                    <p className="font-medium text-[#111111]">
+                      {methodLabel}
+                      {speedLabel ? ` · ${speedLabel}` : ''}
+                    </p>
+                    {order.shippingDeliveredType === 'S' && order.shippingAgencySnapshot && (
+                      <div className="text-[#6B6258]">
+                        <p className="font-medium text-[#111111]">{order.shippingAgencySnapshot.name}</p>
+                        <p>{order.shippingAgencySnapshot.address}</p>
+                        {(order.shippingAgencySnapshot.city || order.shippingAgencySnapshot.province) && (
+                          <p>
+                            {[order.shippingAgencySnapshot.city, order.shippingAgencySnapshot.province]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </p>
+                        )}
+                        {order.shippingAgencySnapshot.postalCode && (
+                          <p>CP {order.shippingAgencySnapshot.postalCode}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )
+            })()}
           </CardContent>
         </Card>
       </div>
