@@ -41,6 +41,7 @@ import {
   type GetCorreoArgentinoQuoteParams,
   type CorreoArgentinoQuote,
   type DeliveryRates,
+  type Agency,
 } from '@/lib/correo-argentino'
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -144,6 +145,55 @@ const rateEntrySchema = z.object({
 const ratesResponseSchema = z.object({
   rates: z.array(rateEntrySchema),
 }).passthrough()
+
+// Schemas de la respuesta de GET /agencies (campos del PDF MiCorreo).
+// Laxos con `.passthrough()` en objetos anidados — solo se exigen los campos
+// mínimos requeridos para mapear a `Agency` (code, name, location.address).
+const agencyHoursSchema = z.object({
+  day: z.string().optional(),
+  hourFrom: z.string().optional(),
+  hourTo: z.string().optional(),
+}).passthrough()
+
+const agencyAddressSchema = z.object({
+  streetName: z.string().optional(),
+  streetNumber: z.string().optional(),
+  floor: z.string().nullable().optional(),
+  apartment: z.string().nullable().optional(),
+  locality: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  provinceCode: z.string().optional(),
+  postalCode: z.string().optional(),
+}).passthrough()
+
+const agencyServicesSchema = z.object({
+  packageReception: z.boolean().optional(),
+  pickupAvailability: z.boolean().optional(),
+}).passthrough()
+
+const agencyRawSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  manager: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  services: agencyServicesSchema.optional(),
+  location: z.object({
+    address: agencyAddressSchema,
+    latitude: z.union([z.number(), z.string()]).nullable().optional(),
+    longitude: z.union([z.number(), z.string()]).nullable().optional(),
+  }).passthrough(),
+  hours: z.array(agencyHoursSchema).optional(),
+  status: z.string().optional(),
+}).passthrough()
+
+const agenciesResponseSchema = z.union([
+  z.array(agencyRawSchema),
+  z.object({ agencies: z.array(agencyRawSchema) }).passthrough(),
+])
+
+type AgencyRaw = z.infer<typeof agencyRawSchema>
 
 // ─── Token cache ──────────────────────────────────────────────────────────────
 
@@ -444,6 +494,101 @@ function mapRatesResponse(json: unknown): CorreoArgentinoQuote {
   }
 }
 
+// ─── Llamada a /agencies (con re-auth en 401 y retry en 429) ──────────────────
+
+async function fetchAgencies(config: OfficialConfig, provinceCode: string): Promise<unknown> {
+  const query = new URLSearchParams({
+    customerId: config.customerId,
+    provinceCode,
+  })
+  const url = `${config.baseUrl}/agencies?${query.toString()}`
+
+  let token = await ensureToken(config)
+
+  let response = await fetchWithRetry(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (response.status === 401) {
+    // Re-autenticar y reintentar exactamente una vez
+    token = await ensureToken(config, true)
+    response = await fetchWithRetry(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (response.status === 401) {
+      const errorBody = await safeReadJson(response)
+      throw new CorreoArgentinoApiError(
+        buildApiErrorMessage('No autorizado en /agencies tras reintento', 401, errorBody),
+        { status: 401, code: extractErrorCode(errorBody) }
+      )
+    }
+  }
+
+  if (!response.ok) {
+    const errorBody = await safeReadJson(response)
+
+    if (response.status === 402) {
+      throw new CorreoArgentinoApiError(
+        buildApiErrorMessage('Customer ID inválido en /agencies', 402, errorBody),
+        { status: 402, code: extractErrorCode(errorBody) ?? 'invalid_customer_id' }
+      )
+    }
+
+    if (response.status === 429) {
+      throw new CorreoArgentinoApiError(
+        buildApiErrorMessage('MiCorreo /agencies rate-limited (429)', 429, errorBody),
+        { status: 429, code: 'rate_limited' }
+      )
+    }
+
+    throw new CorreoArgentinoApiError(
+      buildApiErrorMessage('Error de MiCorreo /agencies', response.status, errorBody),
+      { status: response.status, code: extractErrorCode(errorBody) }
+    )
+  }
+
+  return response.json()
+}
+
+// ─── Mapeo de response /agencies ──────────────────────────────────────────────
+
+function mapAgency(raw: AgencyRaw): Agency {
+  const address = raw.location.address
+  const composedAddress = [address.streetName, address.streetNumber]
+    .filter((part): part is string => Boolean(part))
+    .join(' ')
+
+  return {
+    code: raw.code,
+    name: raw.name,
+    address: composedAddress || '—',
+    locality: address.locality,
+    city: address.city,
+    province: address.province,
+    postalCode: address.postalCode,
+    phone: raw.phone ?? undefined,
+    services: raw.services,
+    hours: raw.hours,
+  }
+}
+
+function mapAgenciesResponse(json: unknown): Agency[] {
+  const parsed = agenciesResponseSchema.safeParse(json)
+  if (!parsed.success) {
+    throw new CorreoArgentinoApiError('Respuesta inválida de GET /agencies (schema)')
+  }
+
+  const rawAgencies = Array.isArray(parsed.data) ? parsed.data : parsed.data.agencies
+  return rawAgencies.map(mapAgency)
+}
+
 // ─── Interfaz pública ─────────────────────────────────────────────────────────
 
 export async function getQuoteFromOfficial(
@@ -455,4 +600,20 @@ export async function getQuoteFromOfficial(
   const json = await fetchRates(config, requestBody)
 
   return mapRatesResponse(json)
+}
+
+/**
+ * Lista las sucursales de Correo Argentino (MiCorreo) para una provincia.
+ *
+ * `provinceCode` es el código MiCorreo de 1 letra (B, C, X, ...) — el mapeo
+ * desde el formato de checkout `AR-X` lo hace el caller (route handler) vía
+ * `arToMicorreoProvinceCode` de `correo-argentino.ts`. Este cliente se
+ * mantiene agnóstico del formato AR-X.
+ */
+export async function getAgencies(params: { provinceCode: string }): Promise<Agency[]> {
+  const config = getConfig()
+
+  const json = await fetchAgencies(config, params.provinceCode)
+
+  return mapAgenciesResponse(json)
 }

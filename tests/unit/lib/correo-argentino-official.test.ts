@@ -743,3 +743,212 @@ describe('getQuoteFromOfficial — retry, timeout y errores', () => {
     await expect(getQuoteFromOfficial(BASE_PARAMS)).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
   }))
 })
+
+// ─── getAgencies ─────────────────────────────────────────────────────────────
+
+const AGENCY_RAW_VALID = {
+  code: 'B-0123',
+  name: 'Sucursal La Plata Centro',
+  manager: 'Juan Pérez',
+  email: 'lp-centro@correoargentino.com.ar',
+  phone: '0221-4123456',
+  services: { packageReception: true, pickupAvailability: true },
+  location: {
+    address: {
+      streetName: 'Calle 7',
+      streetNumber: '650',
+      floor: null,
+      apartment: null,
+      locality: 'La Plata',
+      city: 'La Plata',
+      province: 'Buenos Aires',
+      provinceCode: 'B',
+      postalCode: '1900',
+    },
+    latitude: -34.9214,
+    longitude: -57.9544,
+  },
+  hours: [
+    { day: 'Lunes a Viernes', hourFrom: '08:00', hourTo: '18:00' },
+  ],
+  status: 'active',
+}
+
+const AGENCY_RAW_VALID_2 = {
+  ...AGENCY_RAW_VALID,
+  code: 'B-0456',
+  name: 'Sucursal La Plata Norte',
+  location: {
+    ...AGENCY_RAW_VALID.location,
+    address: { ...AGENCY_RAW_VALID.location.address, postalCode: '1901' },
+  },
+}
+
+describe('getAgencies — mapeo de respuesta', () => {
+  beforeEach(() => { vi.resetModules(); vi.restoreAllMocks() })
+
+  it('respuesta array top-level se mapea a Agency[] aplanando location.address', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/agencies/, body: [AGENCY_RAW_VALID, AGENCY_RAW_VALID_2] },
+    ])
+
+    const { getAgencies } = await import('@/lib/correo-argentino-official')
+    const result = await getAgencies({ provinceCode: 'B' })
+
+    expect(result).toHaveLength(2)
+    expect(result[0]).toMatchObject({
+      code: 'B-0123',
+      name: 'Sucursal La Plata Centro',
+      address: 'Calle 7 650',
+      locality: 'La Plata',
+      city: 'La Plata',
+      province: 'Buenos Aires',
+      postalCode: '1900',
+      phone: '0221-4123456',
+    })
+    expect(result[0]?.services).toMatchObject({ packageReception: true, pickupAvailability: true })
+    expect(result[0]?.hours).toEqual([{ day: 'Lunes a Viernes', hourFrom: '08:00', hourTo: '18:00' }])
+  }))
+
+  it('respuesta { agencies: [...] } se mapea igual que el array top-level', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/agencies/, body: { agencies: [AGENCY_RAW_VALID] } },
+    ])
+
+    const { getAgencies } = await import('@/lib/correo-argentino-official')
+    const result = await getAgencies({ provinceCode: 'B' })
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.code).toBe('B-0123')
+  }))
+
+  it('la request incluye customerId y provinceCode como query params con Bearer token', withEnv(VALID_ENV, async () => {
+    const calls = mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/agencies/, body: [AGENCY_RAW_VALID] },
+    ])
+
+    const { getAgencies } = await import('@/lib/correo-argentino-official')
+    await getAgencies({ provinceCode: 'B' })
+
+    const agenciesCall = calls.find((c) => /\/agencies/.test(c.url))
+    expect(agenciesCall).toBeDefined()
+    const url = new URL(agenciesCall!.url)
+    expect(url.searchParams.get('customerId')).toBe(VALID_ENV.CORREO_ARGENTINO_CUSTOMER_ID)
+    expect(url.searchParams.get('provinceCode')).toBe('B')
+
+    const headers = new Headers(agenciesCall!.init?.headers)
+    expect(headers.get('Authorization')).toBe('Bearer token-abc')
+  }))
+
+  it('schema inválido (falta code) lanza CorreoArgentinoOfficialApiError', withEnv(VALID_ENV, async () => {
+    mockFetchSequence([
+      { url: /\/token$/, body: TOKEN_RESPONSE },
+      { url: /\/agencies/, body: [{ ...AGENCY_RAW_VALID, code: undefined }] },
+    ])
+
+    const { getAgencies, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    await expect(getAgencies({ provinceCode: 'B' })).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+  }))
+})
+
+describe('getAgencies — errores y reintentos', () => {
+  beforeEach(() => { vi.resetModules(); vi.restoreAllMocks() })
+  afterEach(() => { vi.useRealTimers() })
+
+  it('401 dispara re-autenticación y reintenta una vez', withEnv(VALID_ENV, async () => {
+    let agenciesCallCount = 0
+    let tokenCallCount = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      if (/\/token$/.test(url)) {
+        tokenCallCount++
+        return jsonResponse({ token: `token-${tokenCallCount}`, expires: '2026-06-10 23:59:59' })
+      }
+      if (/\/agencies/.test(url)) {
+        agenciesCallCount++
+        if (agenciesCallCount === 1) {
+          return jsonResponse({ code: '401', message: 'Unauthorized' }, { status: 401, ok: false })
+        }
+        return jsonResponse([AGENCY_RAW_VALID])
+      }
+      throw new Error(`unexpected URL ${url}`)
+    })
+
+    const { getAgencies } = await import('@/lib/correo-argentino-official')
+    const result = await getAgencies({ provinceCode: 'B' })
+
+    expect(tokenCallCount).toBe(2)
+    expect(agenciesCallCount).toBe(2)
+    expect(result).toHaveLength(1)
+  }))
+
+  it('402 "Customer ID" lanza CorreoArgentinoOfficialApiError con status 402 y code invalid_customer_id', withEnv(VALID_ENV, async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      if (/\/token$/.test(url)) {
+        return jsonResponse(TOKEN_RESPONSE)
+      }
+      if (/\/agencies/.test(url)) {
+        return jsonResponse({ message: 'Customer ID no válido' }, { status: 402, ok: false })
+      }
+      throw new Error(`unexpected URL ${url}`)
+    })
+
+    const { getAgencies, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    await expect(getAgencies({ provinceCode: 'B' })).rejects.toMatchObject({
+      status: 402,
+      code: 'invalid_customer_id',
+    })
+    await expect(getAgencies({ provinceCode: 'B' })).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+  }))
+
+  it('un timeout (AbortSignal) lanza CorreoArgentinoOfficialApiError con code: timeout', withEnv(VALID_ENV, async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      if (/\/token$/.test(url)) {
+        return jsonResponse(TOKEN_RESPONSE)
+      }
+      if (/\/agencies/.test(url)) {
+        const err = new Error('The operation was aborted due to timeout')
+        err.name = 'TimeoutError'
+        throw err
+      }
+      throw new Error(`unexpected URL ${url}`)
+    })
+
+    const { getAgencies, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    await expect(getAgencies({ provinceCode: 'B' })).rejects.toMatchObject({ code: 'timeout' })
+    await expect(getAgencies({ provinceCode: 'B' })).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+  }))
+
+  it('429 en todos los intentos lanza CorreoArgentinoOfficialApiError con code rate_limited', withEnv(VALID_ENV, async () => {
+    vi.useFakeTimers()
+
+    let agenciesCallCount = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      if (/\/token$/.test(url)) {
+        return jsonResponse(TOKEN_RESPONSE)
+      }
+      if (/\/agencies/.test(url)) {
+        agenciesCallCount++
+        return jsonResponse({ code: '429', message: 'Too Many Requests' }, { status: 429, ok: false })
+      }
+      throw new Error(`unexpected URL ${url}`)
+    })
+
+    const { getAgencies, CorreoArgentinoOfficialApiError } = await import('@/lib/correo-argentino-official')
+    const promise = getAgencies({ provinceCode: 'B' })
+
+    const assertion = expect(promise).rejects.toMatchObject({ status: 429, code: 'rate_limited' })
+    const instanceAssertion = expect(promise).rejects.toBeInstanceOf(CorreoArgentinoOfficialApiError)
+    await vi.runAllTimersAsync()
+    await assertion
+    await instanceAssertion
+
+    expect(agenciesCallCount).toBeGreaterThanOrEqual(2)
+  }))
+})
