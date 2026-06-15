@@ -193,7 +193,7 @@ describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
       expect(screen.getByTestId('agency-select')).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(screen.getByText(/eleg[ií].*sucursal/i)).toBeInTheDocument()
@@ -232,7 +232,7 @@ describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
     // El precio mostrado no cambia tras elegir la agencia
     expect(screen.getAllByText(normalizeSpaces('$ 3.686')).length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
@@ -257,7 +257,7 @@ describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
       expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
     }, { timeout: 3000 })
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
@@ -293,7 +293,7 @@ describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
       expect(screen.getByText(/no.*pudimos.*sucursales|no hay sucursales disponibles/i)).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(screen.getByText(/eleg[ií].*sucursal/i)).toBeInTheDocument()

@@ -96,6 +96,7 @@ function mockFetch(handlers: {
   quote?: { status: number; body: unknown }
   orders?: { status: number; body: unknown }
   agencies?: { status: number; body: unknown }
+  preference?: { status: number; body: unknown }
 }) {
   const fetchMock = vi.fn().mockImplementation(async (url: string) => {
     if (url === '/api/shipping/quote') {
@@ -104,6 +105,13 @@ function mockFetch(handlers: {
     }
     if (url === '/api/orders') {
       const r = handlers.orders ?? { status: 201, body: { orderId: 'order-1' } }
+      return { ok: r.status < 300, status: r.status, json: async () => r.body }
+    }
+    if (url === '/api/payments/preference') {
+      const r = handlers.preference ?? {
+        status: 200,
+        body: { initPoint: 'https://mp.test/checkout', preferenceId: 'pref-1' },
+      }
       return { ok: r.status < 300, status: r.status, json: async () => r.body }
     }
     if (typeof url === 'string' && url.startsWith('/api/shipping/agencies')) {
@@ -218,7 +226,7 @@ describe('CheckoutForm — método de envío y total', () => {
     })
     fireEvent.change(screen.getByTestId('agency-select'), { target: { value: 'B-0123' } })
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
@@ -291,7 +299,7 @@ describe('CheckoutForm — método de envío y total', () => {
     }, { timeout: 3000 })
 
     fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.anything())
@@ -331,7 +339,7 @@ describe('CheckoutForm — método de envío y total', () => {
       expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
     }, { timeout: 3000 })
 
-    fireEvent.click(screen.getByRole('button', { name: /pedilo por whatsapp/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coordinar por whatsapp/i }))
 
     await waitFor(() => {
       expect(screen.getByText(/el costo de envío se actualizó/i)).toBeInTheDocument()
@@ -341,5 +349,90 @@ describe('CheckoutForm — método de envío y total', () => {
     // Re-cotizó tras el 409
     const quoteCalls = fetchMock.mock.calls.filter(([u]) => u === '/api/shipping/quote')
     expect(quoteCalls.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('CheckoutForm — pago con MercadoPago (camino principal)', () => {
+  // jsdom no implementa navegación: reemplazamos window.location por un objeto
+  // plano para poder leer el href asignado tras crear la preferencia.
+  const originalLocation = window.location
+
+  function stubLocation() {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { href: '' },
+    })
+  }
+
+  function restoreLocation() {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    })
+  }
+
+  it('crea la orden, pide la preferencia y redirige al initPoint de MercadoPago', async () => {
+    const fetchMock = mockFetch({})
+    stubLocation()
+    try {
+      render(<CheckoutForm />)
+
+      fillCustomer()
+      fillAddress()
+
+      await waitFor(() => {
+        expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+
+      fireEvent.click(screen.getByRole('button', { name: /pagar con mercadopago/i }))
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith('/api/payments/preference', expect.anything())
+      }, { timeout: 3000 })
+
+      // Orden primero, luego preferencia con el orderId devuelto
+      const orderCall = fetchMock.mock.calls.find(([u]) => u === '/api/orders')!
+      expect(orderCall).toBeTruthy()
+
+      const prefCall = fetchMock.mock.calls.find(([u]) => u === '/api/payments/preference')!
+      const prefBody = JSON.parse((prefCall[1] as RequestInit).body as string)
+      expect(prefBody).toEqual({ orderId: 'order-1' })
+
+      await waitFor(() => {
+        expect(window.location.href).toBe('https://mp.test/checkout')
+      })
+    } finally {
+      restoreLocation()
+    }
+  })
+
+  it('si la preferencia falla, muestra error y no redirige', async () => {
+    const fetchMock = mockFetch({
+      preference: { status: 500, body: { error: 'mp_down' } },
+    })
+    stubLocation()
+    try {
+      render(<CheckoutForm />)
+
+      fillCustomer()
+      fillAddress()
+
+      await waitFor(() => {
+        expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
+      }, { timeout: 3000 })
+
+      fireEvent.click(screen.getByRole('button', { name: /pagar con mercadopago/i }))
+
+      await waitFor(() => {
+        expect(screen.getByText(/mp_down/i)).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      expect(window.location.href).toBe('')
+      expect(fetchMock).toHaveBeenCalledWith('/api/payments/preference', expect.anything())
+    } finally {
+      restoreLocation()
+    }
   })
 })

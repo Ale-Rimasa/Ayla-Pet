@@ -200,7 +200,7 @@ export function CheckoutForm() {
       customer: storedCustomer ?? undefined,
       shippingAddress: storedShipping ?? undefined,
       shippingMethod: 'correo-argentino-domicilio',
-      paymentMethod: 'transfer',
+      paymentMethod: 'mercadopago',
       clientShippingCost: undefined,
     },
   })
@@ -384,13 +384,18 @@ export function CheckoutForm() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
-  const handleWhatsApp = async () => {
+  /**
+   * Valida el formulario, crea la orden y sube las fotos de referencia.
+   * Devuelve el orderId, o null si la validación falló o el costo de envío cambió.
+   * Lanza si la creación de la orden falla por otro motivo (lo maneja cada handler).
+   */
+  const validateAndCreateOrder = async (): Promise<string | null> => {
     const valid = await trigger(FORM_FIELDS as Parameters<typeof trigger>[0])
-    if (!valid) return
+    if (!valid) return null
 
     if (selectedGroup === 'sucursal' && !selectedAgency) {
       setError('Elegí una sucursal de destino para continuar.')
-      return
+      return null
     }
 
     setIsSubmitting(true)
@@ -402,61 +407,98 @@ export function CheckoutForm() {
     setCustomerInfo(data.customer)
     setShippingAddress(data.shippingAddress)
 
+    const orderRes = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer: data.customer,
+        shipping: data.shippingAddress,
+        items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+        shippingMethod: data.shippingMethod,
+        productType: selectedProductType,
+        ...(selectedShippingCost !== undefined ? { clientShippingCost: selectedShippingCost } : {}),
+        observations: data.observations,
+        engravingText: data.engravingText || undefined,
+        ...(selectedGroup === 'sucursal' && selectedAgency
+          ? { agencyCode: selectedAgency.code, agencySnapshot: selectedAgency }
+          : {}),
+      }),
+    })
+
+    const body = await orderRes.json().catch(() => ({})) as {
+      orderId?: string
+      error?: string
+      newShippingCost?: number
+    }
+
+    if (orderRes.status === 409 && body?.error === 'shipping_price_changed') {
+      // El costo cambió entre la cotización y el pedido: refrescamos y pedimos reconfirmar
+      await fetchQuote(data.shippingAddress.postalCode, data.shippingAddress.province)
+      setError('El costo de envío se actualizó. Revisalo y volvé a confirmar el pedido.')
+      setIsSubmitting(false)
+      return null
+    }
+
+    if (!orderRes.ok) {
+      throw new Error(body?.error ?? 'Error al crear el pedido')
+    }
+
+    const orderId = body.orderId!
+
+    // Upload photos sequentially — failures are non-blocking
+    if (photos.length > 0) {
+      const failures: number[] = []
+      for (let i = 0; i < photos.length; i++) {
+        const fd = new FormData()
+        fd.append('orderId', orderId)
+        fd.append('file', photos[i].file)
+        const r = await uploadOrderReferencePhoto(fd)
+        if (!r.ok) failures.push(i)
+      }
+      if (failures.length > 0) {
+        setPhotoNotice(`No se pudieron subir ${failures.length} foto(s).`)
+        setPhotoFailOrderId(orderId)
+      }
+    }
+
+    return orderId
+  }
+
+  // Camino principal: crea la orden y redirige a MercadoPago Checkout Pro.
+  const handlePayWithMP = async () => {
     try {
-      const orderRes = await fetch('/api/orders', {
+      const orderId = await validateAndCreateOrder()
+      if (!orderId) return
+
+      const prefRes = await fetch('/api/payments/preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer: data.customer,
-          shipping: data.shippingAddress,
-          items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
-          shippingMethod: data.shippingMethod,
-          productType: selectedProductType,
-          ...(selectedShippingCost !== undefined ? { clientShippingCost: selectedShippingCost } : {}),
-          observations: data.observations,
-          engravingText: data.engravingText || undefined,
-          ...(selectedGroup === 'sucursal' && selectedAgency
-            ? { agencyCode: selectedAgency.code, agencySnapshot: selectedAgency }
-            : {}),
-        }),
+        body: JSON.stringify({ orderId }),
       })
 
-      const body = await orderRes.json().catch(() => ({})) as {
-        orderId?: string
+      const prefBody = await prefRes.json().catch(() => ({})) as {
+        initPoint?: string
         error?: string
-        newShippingCost?: number
       }
 
-      if (orderRes.status === 409 && body?.error === 'shipping_price_changed') {
-        // El costo cambió entre la cotización y el pedido: refrescamos y pedimos reconfirmar
-        await fetchQuote(data.shippingAddress.postalCode, data.shippingAddress.province)
-        setError('El costo de envío se actualizó. Revisalo y volvé a confirmar el pedido.')
-        setIsSubmitting(false)
-        return
+      if (!prefRes.ok || !prefBody.initPoint) {
+        throw new Error(prefBody.error ?? 'No pudimos iniciar el pago. Probá de nuevo.')
       }
 
-      if (!orderRes.ok) {
-        throw new Error(body?.error ?? 'Error al crear el pedido')
-      }
+      window.location.href = prefBody.initPoint
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
+      setIsSubmitting(false)
+    }
+  }
 
-      const orderId = body.orderId!
+  // Camino secundario (negocio híbrido): crea la orden y abre WhatsApp para coordinar.
+  const handleWhatsApp = async () => {
+    try {
+      const orderId = await validateAndCreateOrder()
+      if (!orderId) return
 
-      // Upload photos sequentially — failures are non-blocking
-      if (photos.length > 0) {
-        const failures: number[] = []
-        for (let i = 0; i < photos.length; i++) {
-          const fd = new FormData()
-          fd.append('orderId', orderId)
-          fd.append('file', photos[i].file)
-          const r = await uploadOrderReferencePhoto(fd)
-          if (!r.ok) failures.push(i)
-        }
-        if (failures.length > 0) {
-          setPhotoNotice(`No se pudieron subir ${failures.length} foto(s).`)
-          setPhotoFailOrderId(orderId)
-        }
-      }
-
+      const data = getValues()
       const message = buildWhatsAppMessage({
         orderId,
         customer: data.customer,
@@ -829,16 +871,29 @@ export function CheckoutForm() {
             </dl>
           </section>
 
-          <Button
-            type="button"
-            size="lg"
-            className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold"
-            onClick={handleWhatsApp}
-            disabled={isSubmitting || items.length === 0}
-          >
-            <MessageCircle className="h-5 w-5 mr-2" />
-            {isSubmitting ? 'Procesando...' : 'Pedilo por WhatsApp'}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              type="button"
+              size="lg"
+              className="w-full font-semibold"
+              onClick={handlePayWithMP}
+              disabled={isSubmitting || items.length === 0}
+            >
+              {isSubmitting ? 'Procesando...' : 'Pagar con MercadoPago'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full border-[#25D366] text-[#128C7E] hover:bg-[#25D366]/10"
+              onClick={handleWhatsApp}
+              disabled={isSubmitting || items.length === 0}
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              {isSubmitting ? 'Procesando...' : 'Prefiero coordinar por WhatsApp'}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
