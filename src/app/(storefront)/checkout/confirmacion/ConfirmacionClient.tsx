@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
 import { formatPrice } from '@/lib/utils'
+import { TRANSFER_DISCOUNT_RATE } from '@/lib/constants'
 import { buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { Order } from '@/types'
@@ -97,15 +98,15 @@ export function ConfirmacionClient({ order, mpStatus, transferInfo }: Confirmaci
               <span>{formatPrice(order.total)}</span>
             </div>
             <div className="flex justify-between text-sm text-green-600">
-              <span>Descuento 10%</span>
-              <span>-{formatPrice(Math.round(order.total * 0.1))}</span>
+              <span>Descuento {Math.round(TRANSFER_DISCOUNT_RATE * 100)}%</span>
+              <span>-{formatPrice(Math.round(order.total * TRANSFER_DISCOUNT_RATE))}</span>
             </div>
 
             <Separator className="my-3" />
 
             <div className="flex justify-between text-base font-semibold">
               <span>Total a transferir</span>
-              <span className="text-secondary">{formatPrice(Math.round(order.total * 0.9))}</span>
+              <span className="text-secondary">{formatPrice(Math.round(order.total * (1 - TRANSFER_DISCOUNT_RATE)))}</span>
             </div>
           </div>
 

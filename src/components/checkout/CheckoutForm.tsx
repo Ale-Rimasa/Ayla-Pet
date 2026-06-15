@@ -12,7 +12,7 @@ import { useCheckoutStore } from '@/store/checkout.store'
 import { CheckoutSchema } from '@/lib/validations'
 import type { CheckoutFormValues } from '@/lib/validations'
 import { formatPrice } from '@/lib/utils'
-import { AR_PROVINCES_LIST } from '@/lib/constants'
+import { AR_PROVINCES_LIST, TRANSFER_DISCOUNT_RATE } from '@/lib/constants'
 import type { CorreoArgentinoQuote, Agency } from '@/lib/correo-argentino'
 import { uploadOrderReferencePhoto } from '@/lib/actions/order-photos'
 import { Input } from '@/components/ui/input'
@@ -217,6 +217,14 @@ export function CheckoutForm() {
   const selectedProductType = PRODUCT_TYPE_BY_SPEED[selectedSpeed]
   const selectedRate = quote?.[selectedGroup]?.[selectedSpeed] ?? null
   const selectedShippingCost = selectedRate?.priceCentavos
+
+  // Descuento por transferencia (sobre el total = productos + envío). Mientras el
+  // envío no esté cotizado se calcula sobre el subtotal y se anota "+ envío".
+  const shippingKnown = selectedShippingCost !== undefined
+  const grossTotal = subtotal + (selectedShippingCost ?? 0)
+  const transferDiscount = Math.round(grossTotal * TRANSFER_DISCOUNT_RATE)
+  const transferTotal = grossTotal - transferDiscount
+  const discountPercent = Math.round(TRANSFER_DISCOUNT_RATE * 100)
 
   // Mantener shippingMethod de RHF sincronizado con la selección combinada
   // (CheckoutSchema valida shippingMethod).
@@ -871,6 +879,34 @@ export function CheckoutForm() {
             </dl>
           </section>
 
+          {/* ── Resumen pagando por transferencia (descuento) ── */}
+          <section
+            aria-labelledby="transfer-summary-heading"
+            className="rounded-lg border border-secondary/40 bg-secondary/5 p-4"
+          >
+            <h2 id="transfer-summary-heading" className="text-lg font-semibold">
+              Pagando por transferencia
+            </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              {discountPercent}% de descuento — se coordina por WhatsApp.
+            </p>
+            <dl className="space-y-2 text-sm">
+              <div className="flex items-center justify-between text-green-600">
+                <dt>Descuento {discountPercent}%</dt>
+                <dd>-{formatPrice(transferDiscount)}</dd>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between text-base font-semibold">
+                <dt>Total con transferencia</dt>
+                <dd className="text-secondary">
+                  {shippingKnown
+                    ? formatPrice(transferTotal)
+                    : `${formatPrice(transferTotal)} + envío`}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
           <div className="space-y-3">
             <Button
               type="button"
@@ -891,7 +927,7 @@ export function CheckoutForm() {
               disabled={isSubmitting || items.length === 0}
             >
               <MessageCircle className="h-5 w-5 mr-2" />
-              {isSubmitting ? 'Procesando...' : 'Prefiero coordinar por WhatsApp'}
+              {isSubmitting ? 'Procesando...' : 'Prefiero coordinar por WhatsApp — Si es por transferencia'}
             </Button>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CheckoutForm } from '@/components/checkout/CheckoutForm'
 import { useCartStore } from '@/store/cart.store'
 import { useCheckoutStore } from '@/store/checkout.store'
+import { formatPrice } from '@/lib/utils'
+import { TRANSFER_DISCOUNT_RATE } from '@/lib/constants'
 
 // El Select de Base UI necesita PointerEvents reales que jsdom no implementa
 // (la interacción real se cubre con Playwright). Acá lo reemplazamos por un
@@ -196,6 +198,29 @@ describe('CheckoutForm — método de envío y total', () => {
     await waitFor(() => {
       expect(screen.getByText(normalizeSpaces('$ 8.686'))).toBeInTheDocument()
     })
+  })
+
+  it('muestra el resumen por transferencia con el descuento aplicado sobre el total', async () => {
+    mockFetch({})
+    render(<CheckoutForm />)
+
+    fillAddress()
+
+    // Esperar a que cargue la cotización (Domicilio Clásico default: envío 620100)
+    await waitFor(() => {
+      expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
+    }, { timeout: 3000 })
+
+    expect(screen.getByText('Pagando por transferencia')).toBeInTheDocument()
+    expect(screen.getByText('Total con transferencia')).toBeInTheDocument()
+    expect(screen.getByText(/descuento 10%/i)).toBeInTheDocument()
+
+    // subtotal 500000 + envío 620100 = 1120100; -10% = total con transferencia
+    const gross = 500000 + 620100
+    const expectedTransferTotal = normalizeSpaces(
+      formatPrice(gross - Math.round(gross * TRANSFER_DISCOUNT_RATE))
+    )
+    expect(screen.getAllByText(expectedTransferTotal).length).toBeGreaterThan(0)
   })
 
   it('sin cotización el resumen muestra "A calcular" y no rompe', () => {

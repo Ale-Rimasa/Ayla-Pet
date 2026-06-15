@@ -35,6 +35,9 @@ export const TRANSFER = {
   banco: 'Galicia',
 } as const
 
+/** Descuento aplicado al pagar por transferencia bancaria, sobre el total (productos + envío). */
+export const TRANSFER_DISCOUNT_RATE = 0.1
+
 export const HERO_DEFAULTS = {
   title: 'Su esencia grabada para siempre',
   subtitle: 'Piezas personalizadas creadas para celebrar el vínculo con tu mascota',
