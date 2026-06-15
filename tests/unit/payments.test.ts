@@ -86,6 +86,20 @@ describe('createPreference', () => {
     })
   })
 
+  it('incluye el costo de envío en la preferencia (shipments.cost en pesos)', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const body = mockPreferenceCreate.mock.calls[0][0].body
+    // shippingCost 50000 centavos → 500 pesos
+    expect(body.shipments).toEqual({ cost: 500, mode: 'not_specified' })
+  })
+
   it('returns { ok: false, error: string } when MP SDK throws', async () => {
     mockPreferenceCreate.mockRejectedValue(new Error('MP API down'))
 

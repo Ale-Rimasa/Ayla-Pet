@@ -30,6 +30,10 @@ export async function createPreference(
           email: order.customer.email,
           phone: { number: order.customer.phone },
         },
+        shipments: {
+          cost: order.shippingCost / 100, // centavos → pesos
+          mode: 'not_specified',
+        },
         notification_url: `${env.NEXT_PUBLIC_SITE_URL}/api/webhooks/mercadopago`,
         back_urls: {
           success: `${env.NEXT_PUBLIC_SITE_URL}/checkout/confirmacion`,
