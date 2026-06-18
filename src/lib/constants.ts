@@ -35,7 +35,7 @@ export const TRANSFER = {
   banco: 'Galicia',
 } as const
 
-/** Descuento aplicado al pagar por transferencia bancaria, sobre el total (productos + envío). */
+/** Descuento aplicado al pagar por transferencia bancaria, solo sobre los productos (subtotal, sin envío). */
 export const TRANSFER_DISCOUNT_RATE = 0.1
 
 export const HERO_DEFAULTS = {

@@ -98,15 +98,15 @@ export function ConfirmacionClient({ order, mpStatus, transferInfo }: Confirmaci
               <span>{formatPrice(order.total)}</span>
             </div>
             <div className="flex justify-between text-sm text-green-600">
-              <span>Descuento {Math.round(TRANSFER_DISCOUNT_RATE * 100)}%</span>
-              <span>-{formatPrice(Math.round(order.total * TRANSFER_DISCOUNT_RATE))}</span>
+              <span>Descuento {Math.round(TRANSFER_DISCOUNT_RATE * 100)}% (solo productos)</span>
+              <span>-{formatPrice(Math.round(order.subtotal * TRANSFER_DISCOUNT_RATE))}</span>
             </div>
 
             <Separator className="my-3" />
 
             <div className="flex justify-between text-base font-semibold">
               <span>Total a transferir</span>
-              <span className="text-secondary">{formatPrice(Math.round(order.total * (1 - TRANSFER_DISCOUNT_RATE)))}</span>
+              <span className="text-secondary">{formatPrice(order.total - Math.round(order.subtotal * TRANSFER_DISCOUNT_RATE))}</span>
             </div>
           </div>
 

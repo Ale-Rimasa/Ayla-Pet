@@ -218,11 +218,11 @@ export function CheckoutForm() {
   const selectedRate = quote?.[selectedGroup]?.[selectedSpeed] ?? null
   const selectedShippingCost = selectedRate?.priceCentavos
 
-  // Descuento por transferencia (sobre el total = productos + envío). Mientras el
-  // envío no esté cotizado se calcula sobre el subtotal y se anota "+ envío".
+  // Descuento por transferencia: solo sobre los productos (subtotal), el envío
+  // se paga completo. El total con transferencia = subtotal con descuento + envío.
   const shippingKnown = selectedShippingCost !== undefined
   const grossTotal = subtotal + (selectedShippingCost ?? 0)
-  const transferDiscount = Math.round(grossTotal * TRANSFER_DISCOUNT_RATE)
+  const transferDiscount = Math.round(subtotal * TRANSFER_DISCOUNT_RATE)
   const transferTotal = grossTotal - transferDiscount
   const discountPercent = Math.round(TRANSFER_DISCOUNT_RATE * 100)
 

@@ -215,10 +215,11 @@ describe('CheckoutForm — método de envío y total', () => {
     expect(screen.getByText('Total con transferencia')).toBeInTheDocument()
     expect(screen.getByText(/descuento 10%/i)).toBeInTheDocument()
 
-    // subtotal 500000 + envío 620100 = 1120100; -10% = total con transferencia
-    const gross = 500000 + 620100
+    // Descuento solo sobre productos: subtotal 500000 con -10%, envío 620100 completo
+    const subtotal = 500000
+    const gross = subtotal + 620100
     const expectedTransferTotal = normalizeSpaces(
-      formatPrice(gross - Math.round(gross * TRANSFER_DISCOUNT_RATE))
+      formatPrice(gross - Math.round(subtotal * TRANSFER_DISCOUNT_RATE))
     )
     expect(screen.getAllByText(expectedTransferTotal).length).toBeGreaterThan(0)
   })
