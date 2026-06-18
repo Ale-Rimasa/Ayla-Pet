@@ -52,8 +52,12 @@ const SHIPPING_SELECTION_OPTIONS: {
 }[] = [
   { value: 'domicilio:clasico', group: 'domicilio', speed: 'clasico', label: 'Correo Argentino a domicilio — Clásico' },
   { value: 'domicilio:expreso', group: 'domicilio', speed: 'expreso', label: 'Correo Argentino a domicilio — Expreso' },
-  { value: 'sucursal:clasico', group: 'sucursal', speed: 'clasico', label: 'Correo Argentino a sucursal — Clásico' },
-  { value: 'sucursal:expreso', group: 'sucursal', speed: 'expreso', label: 'Correo Argentino a sucursal — Expreso' },
+  // Entregas a sucursal deshabilitadas a pedido del cliente. Toda la lógica de
+  // sucursal (selector de agencia, fetchAgencies, validación, payload) queda
+  // intacta pero inalcanzable porque 'sucursal' ya no es seleccionable.
+  // Para reactivar, descomentar estas dos opciones.
+  // { value: 'sucursal:clasico', group: 'sucursal', speed: 'clasico', label: 'Correo Argentino a sucursal — Clásico' },
+  // { value: 'sucursal:expreso', group: 'sucursal', speed: 'expreso', label: 'Correo Argentino a sucursal — Expreso' },
 ]
 
 const SHIPPING_METHOD_BY_GROUP: Record<ShippingGroup, CheckoutFormValues['shippingMethod']> = {

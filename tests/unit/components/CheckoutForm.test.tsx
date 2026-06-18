@@ -169,8 +169,9 @@ describe('CheckoutForm — método de envío y total', () => {
     }, { timeout: 3000 })
 
     await waitFor(() => {
+      // Domicilio Clásico 6.201 y Domicilio Expreso 9.500 (sucursal deshabilitada)
       expect(screen.getAllByText(normalizeSpaces('$ 6.201')).length).toBeGreaterThan(0)
-      expect(screen.getByText(normalizeSpaces('$ 3.686'))).toBeInTheDocument()
+      expect(screen.getByText(normalizeSpaces('$ 9.500'))).toBeInTheDocument()
     })
 
     const quoteCall = fetchMock.mock.calls.find(([u]) => u === '/api/shipping/quote')!
@@ -193,10 +194,10 @@ describe('CheckoutForm — método de envío y total', () => {
       expect(screen.getByText(normalizeSpaces('$ 11.201'))).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    // Cambio a sucursal Clásico: 5000,00 + 3686,00 = 8686,00
-    fireEvent.click(screen.getByLabelText(/a sucursal — clásico/i))
+    // Cambio a Domicilio Expreso: 5000,00 + 9500,00 = 14500,00
+    fireEvent.click(screen.getByLabelText(/correo argentino a domicilio — expreso/i))
     await waitFor(() => {
-      expect(screen.getByText(normalizeSpaces('$ 8.686'))).toBeInTheDocument()
+      expect(screen.getByText(normalizeSpaces('$ 14.500'))).toBeInTheDocument()
     })
   })
 
@@ -232,7 +233,9 @@ describe('CheckoutForm — método de envío y total', () => {
     expect(screen.getByText(/completá el código postal/i)).toBeInTheDocument()
   })
 
-  it('envía clientShippingCost del método elegido al crear el pedido', async () => {
+  // Sucursal deshabilitada a pedido del cliente. El envío de clientShippingCost
+  // para el camino activo queda cubierto por el test de Domicilio Expreso.
+  it.skip('envía clientShippingCost del método elegido al crear el pedido', async () => {
     const fetchMock = mockFetch({})
     vi.stubGlobal('open', vi.fn())
     render(<CheckoutForm />)
@@ -265,7 +268,7 @@ describe('CheckoutForm — método de envío y total', () => {
     expect(body.clientShippingCost).toBe(368600)
   })
 
-  it('renderiza 4 opciones de envío cuando las 4 combinaciones están disponibles', async () => {
+  it('renderiza solo las opciones de domicilio (sucursal deshabilitada)', async () => {
     mockFetch({})
     render(<CheckoutForm />)
 
@@ -276,8 +279,7 @@ describe('CheckoutForm — método de envío y total', () => {
     }, { timeout: 3000 })
 
     expect(screen.getByLabelText(/correo argentino a domicilio — expreso/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/correo argentino a sucursal — expreso/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/a sucursal/i)).not.toBeInTheDocument()
   })
 
   it('oculta Expreso cuando la cotización no lo incluye para ninguna zona', async () => {
@@ -290,7 +292,6 @@ describe('CheckoutForm — método de envío y total', () => {
       expect(screen.getByLabelText(/correo argentino a domicilio — clásico/i)).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    expect(screen.getByLabelText(/correo argentino a sucursal — clásico/i)).toBeInTheDocument()
     expect(screen.queryByText(/expreso/i)).not.toBeInTheDocument()
   })
 

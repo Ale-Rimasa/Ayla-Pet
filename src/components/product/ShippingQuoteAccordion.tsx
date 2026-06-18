@@ -37,7 +37,9 @@ interface ShippingQuoteResponse {
 
 const SHIPPING_GROUPS: { key: 'domicilio' | 'sucursal'; label: string }[] = [
   { key: 'domicilio', label: 'A domicilio' },
-  { key: 'sucursal', label: 'A sucursal' },
+  // Entregas a sucursal deshabilitadas a pedido del cliente. Para reactivar,
+  // descomentar esta opción.
+  // { key: 'sucursal', label: 'A sucursal' },
 ]
 
 const SHIPPING_SPEEDS: { key: 'clasico' | 'expreso'; label: string }[] = [
@@ -232,7 +234,8 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
             <p className="font-medium">Tipo de entrega</p>
             <ul className="space-y-1 text-muted-foreground pl-1">
               <li>• Domicilio</li>
-              <li>• Sucursal</li>
+              {/* Entregas a sucursal deshabilitadas a pedido del cliente. */}
+              {/* <li>• Sucursal</li> */}
               <li>• Retiro en Parque Patricio</li>
               <li>• Retiro en Gral. Pacheco</li>
               <li>• Retiro en Nordelta</li>
@@ -244,6 +247,9 @@ export function ShippingQuoteAccordion({ variantId }: ShippingQuoteAccordionProp
             <ul className="space-y-1 text-muted-foreground pl-1">
               <li>
                 • <strong className="text-foreground">PAQ.AR Clásico</strong> — 2 a 5 días hábiles (una vez despachado)
+              </li>
+              <li>
+                • <strong className="text-foreground">Correo Argentino a domicilio — Expreso</strong> — 1 a 3 días hábiles
               </li>
             </ul>
           </div>

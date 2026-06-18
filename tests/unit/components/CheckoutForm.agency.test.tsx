@@ -128,7 +128,9 @@ beforeEach(() => {
   useCheckoutStore.setState({ customerInfo: null, shippingAddress: null })
 })
 
-describe('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
+// Entregas a sucursal deshabilitadas a pedido del cliente. Estos tests quedan
+// skippeados (no borrados) para reactivarlos junto con la feature cuando vuelva.
+describe.skip('CheckoutForm — selector de sucursal de destino (Fase 2)', () => {
   it('no muestra el selector de agencia ni consulta /api/shipping/agencies para domicilio (default)', async () => {
     const fetchMock = mockFetch({})
     render(<CheckoutForm />)
