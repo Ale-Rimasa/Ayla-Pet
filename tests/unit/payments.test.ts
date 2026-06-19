@@ -119,6 +119,19 @@ describe('createPreference', () => {
     expect(body.shipments).toEqual({ cost: 500, mode: 'not_specified' })
   })
 
+  it('no envía notification_url — usa el webhook del panel (formato moderno firmado)', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const body = mockPreferenceCreate.mock.calls[0][0].body
+    expect(body.notification_url).toBeUndefined()
+  })
+
   it('envía un idempotency key estable (order.id) al crear la preferencia', async () => {
     mockPreferenceCreate.mockResolvedValue({
       id: 'pref-abc-123',
