@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/admin/StatusBadge'
 import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector'
+import { DispatchButton } from '@/components/admin/DispatchButton'
 import { useDebounce } from '@/hooks/useDebounce'
 import { formatPrice } from '@/lib/utils'
 import type { Order } from '@/types'
@@ -76,6 +77,7 @@ export function OrdersTable({ orders, searchQuery = '' }: OrdersTableProps) {
                 <TableHead>Pago</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Cambiar estado</TableHead>
+                <TableHead>Enviar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,6 +130,12 @@ export function OrdersTable({ orders, searchQuery = '' }: OrdersTableProps) {
                       orderId={order.id}
                       currentStatus={order.status}
                     />
+                  </TableCell>
+                  <TableCell
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    <DispatchButton orderId={order.id} status={order.status} />
                   </TableCell>
                 </TableRow>
               ))}
