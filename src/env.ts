@@ -10,8 +10,16 @@ export const env = createEnv({
       process.env.NODE_ENV === 'production'
         ? z.string().min(1)
         : z.string().min(1).optional(),
-    RESEND_API_KEY: z.string().min(1).optional(),
-    RESEND_FROM_EMAIL: z.string().email().optional(),
+    // Required outside test so a missing key fails at startup (no silent no-op send).
+    // Optional in test so Vitest suites run without live Resend credentials.
+    RESEND_API_KEY:
+      process.env.NODE_ENV === 'test'
+        ? z.string().min(1).optional()
+        : z.string().min(1),
+    RESEND_FROM_EMAIL:
+      process.env.NODE_ENV === 'test'
+        ? z.string().email().optional()
+        : z.string().email(),
     DATABASE_URL: z.url().optional(),
   },
   client: {
