@@ -86,6 +86,25 @@ describe('createPreference', () => {
     })
   })
 
+  it('siempre usa init_point e ignora sandbox_init_point (MP ya no tiene sandbox)', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+      sandbox_init_point: 'https://sandbox.mercadopago.com.ar/INVALID',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    const result = await createPreference(mockOrder)
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        initPoint: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+        preferenceId: 'pref-abc-123',
+      },
+    })
+  })
+
   it('incluye el costo de envío en la preferencia (shipments.cost en pesos)', async () => {
     mockPreferenceCreate.mockResolvedValue({
       id: 'pref-abc-123',
@@ -98,6 +117,60 @@ describe('createPreference', () => {
     const body = mockPreferenceCreate.mock.calls[0][0].body
     // shippingCost 50000 centavos → 500 pesos
     expect(body.shipments).toEqual({ cost: 500, mode: 'not_specified' })
+  })
+
+  it('envía un idempotency key estable (order.id) al crear la preferencia', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const requestOptions = mockPreferenceCreate.mock.calls[0][0].requestOptions
+    expect(requestOptions?.idempotencyKey).toBe('order-uuid-1')
+  })
+
+  it('envía statement_descriptor para reducir desconocimientos/contracargos', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const body = mockPreferenceCreate.mock.calls[0][0].body
+    expect(body.statement_descriptor).toBe('AYLA')
+  })
+
+  it('divide el nombre del comprador en payer.name y payer.surname', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const body = mockPreferenceCreate.mock.calls[0][0].body
+    // 'Ana García' → name 'Ana', surname 'García'
+    expect(body.payer.name).toBe('Ana')
+    expect(body.payer.surname).toBe('García')
+  })
+
+  it('envía description en cada item de la preferencia', async () => {
+    mockPreferenceCreate.mockResolvedValue({
+      id: 'pref-abc-123',
+      init_point: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-abc-123',
+    })
+
+    const { createPreference } = await import('@/lib/payments')
+    await createPreference(mockOrder)
+
+    const body = mockPreferenceCreate.mock.calls[0][0].body
+    expect(body.items[0].description).toBeTruthy()
   })
 
   it('returns { ok: false, error: string } when MP SDK throws', async () => {

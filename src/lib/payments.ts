@@ -2,6 +2,9 @@ import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { env } from '@/env'
 import type { Order } from '@/types'
 
+// Appears on the buyer's card statement (max ~16 chars). Keep it recognizable as the brand.
+const STATEMENT_DESCRIPTOR = 'AYLA'
+
 function getMpClient() {
   if (!env.MP_ACCESS_TOKEN) throw new Error('MP_ACCESS_TOKEN is not configured')
   return new MercadoPagoConfig({ accessToken: env.MP_ACCESS_TOKEN })
@@ -15,18 +18,26 @@ export async function createPreference(
 > {
   try {
     const preferenceClient = new Preference(getMpClient())
+    // Split the full name into name + surname; MP's fraud engine scores both.
+    const [payerName, ...payerSurnameParts] = order.customer.name.trim().split(/\s+/)
+    const payerSurname = payerSurnameParts.join(' ')
+
     const response = await preferenceClient.create({
       body: {
         external_reference: order.id,
+        // Shows on the buyer's card statement; reduces chargebacks/unknown charges.
+        statement_descriptor: STATEMENT_DESCRIPTOR,
         items: order.items.map((item) => ({
           id: item.variantId ?? item.id,
           title: `${item.productName} — ${item.variantName}`,
+          description: `${item.productName} ${item.variantName}`.trim(),
           quantity: item.quantity,
           unit_price: item.unitPrice / 100, // centavos → pesos
           picture_url: item.imageUrl ?? undefined,
         })),
         payer: {
-          name: order.customer.name,
+          name: payerName,
+          surname: payerSurname || undefined,
           email: order.customer.email,
           phone: { number: order.customer.phone },
         },
@@ -42,17 +53,14 @@ export async function createPreference(
         },
         auto_return: 'approved',
       },
+      // Stable key so retries (network errors, double-clicks) don't create duplicate preferences.
+      requestOptions: { idempotencyKey: order.id },
     })
-
-    const isTest = env.MP_ACCESS_TOKEN?.startsWith('TEST-')
-    const initPoint = isTest
-      ? (response.sandbox_init_point ?? response.init_point!)
-      : response.init_point!
 
     return {
       ok: true,
       data: {
-        initPoint,
+        initPoint: response.init_point!,
         preferenceId: response.id!,
       },
     }
