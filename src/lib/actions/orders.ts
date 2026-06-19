@@ -7,10 +7,72 @@ import { requireAdmin } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { updateOrderStatus as dbUpdateOrderStatus, getOrderStatusById } from '@/lib/db/orders'
+import {
+  updateOrderStatus as dbUpdateOrderStatus,
+  getOrderById,
+  getOrderStatusById,
+} from '@/lib/db/orders'
+import { sendOrderShipped } from '@/lib/email'
 import { UpdateOrderStatusSchema } from '@/lib/validations'
 import type { UpdateOrderStatusInput } from '@/lib/validations'
 import type { OrderStatus } from '@/types'
+
+// ── dispatchOrder ─────────────────────────────────────────────────────────────
+
+export type DispatchResult =
+  | { ok: true; emailSent: boolean }
+  | { ok: false; error: 'invalid-input' | 'not-found' | 'invalid-transition' | 'transition-failed' | 'unauthorized' }
+
+/**
+ * dispatchOrder — marks a processing order as shipped and sends the customer email.
+ *
+ * Control flow (order matters):
+ *  1. Auth gate — requireAdmin throws on non-admin (S2)
+ *  2. Input validation — Zod uuid check (S3)
+ *  3. Load full order — needed for existence check + status gate + email payload (S4)
+ *  4. Status gate — only 'processing' may transition (S5)
+ *  5. Atomic DB transition FIRST — source of truth; race-guarded RPC (S6/S8)
+ *  6. Email AFTER confirmed transition, awaited so result is observable (S7)
+ *  7. Cache revalidation regardless of email outcome
+ *  8. Return result
+ */
+export async function dispatchOrder(orderId: string): Promise<DispatchResult> {
+  // Step 1 — auth (throws on non-admin, consistent with updateOrderStatus)
+  const user = await requireAdmin()
+
+  // Step 2 — input validation
+  const parsed = OrderIdSchema.safeParse(orderId)
+  if (!parsed.success) {
+    return { ok: false, error: 'invalid-input' }
+  }
+
+  // Step 3 — load full order (single fetch covers existence + status + email payload)
+  const order = await getOrderById(parsed.data)
+  if (!order) {
+    return { ok: false, error: 'not-found' }
+  }
+
+  // Step 4 — status gate (hard requirement: must be processing, no shortcuts)
+  if (order.status !== 'processing') {
+    return { ok: false, error: 'invalid-transition' }
+  }
+
+  // Step 5 — atomic transition (source of truth; returns { ok } never throws)
+  const result = await dbUpdateOrderStatus(parsed.data, 'processing', 'shipped', user.id)
+  if (!result.ok) {
+    return { ok: false, error: 'transition-failed' }
+  }
+
+  // Step 6 — email after confirmed transition, awaited so result is observable
+  const { sent } = await sendOrderShipped(order)
+
+  // Step 7 — cache revalidation (regardless of email outcome)
+  revalidatePath('/admin/pedidos')
+  revalidateTag(`pedido:${parsed.data}`, {})
+
+  // Step 8 — return result
+  return { ok: true, emailSent: sent }
+}
 
 const OrderIdSchema = z.string().uuid()
 
