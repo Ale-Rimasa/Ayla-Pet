@@ -27,9 +27,21 @@ export async function POST(request: NextRequest) {
     body = await request.json() as { data?: { id?: unknown } }
   } catch { /* body stays empty */ }
 
+  const url = new URL(request.url)
   const bodyPaymentId = String(body?.data?.id ?? '')
-  const urlPaymentId = new URL(request.url).searchParams.get('id') ?? ''
+  const urlPaymentId = url.searchParams.get('id') ?? ''
   const paymentId = bodyPaymentId || urlPaymentId
+
+  // TEMP DEBUG — diagnosing signature mismatch. No secrets logged. Remove after.
+  console.info('[webhook][debug] incoming', {
+    query: Object.fromEntries(url.searchParams),
+    body: JSON.stringify(body).slice(0, 300),
+    xRequestId,
+    xSignature,
+    bodyPaymentId,
+    urlPaymentId,
+    paymentIdUsed: paymentId,
+  })
 
   if (!verifyMPSignature(xSignature, xRequestId, paymentId, env.MP_WEBHOOK_SECRET)) {
     console.error('[webhook] Signature verification failed', {
