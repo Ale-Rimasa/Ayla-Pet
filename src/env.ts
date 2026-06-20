@@ -4,7 +4,12 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-    MP_ACCESS_TOKEN: z.string().min(1).optional(),
+    // Required in production: a missing access token must fail at startup, not silently
+    // at runtime when the first checkout tries to create a preference.
+    MP_ACCESS_TOKEN:
+      process.env.NODE_ENV === 'production'
+        ? z.string().min(1)
+        : z.string().min(1).optional(),
     // Required in production: without it the webhook HMAC check is forgeable (empty-key HMAC)
     MP_WEBHOOK_SECRET:
       process.env.NODE_ENV === 'production'
