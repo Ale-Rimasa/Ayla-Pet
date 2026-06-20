@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Ayla">
+  <rect width="64" height="64" rx="14" fill="#717552"/>
+  <path d="M19 49 L32 15 L45 49" fill="none" stroke="#FAF7F2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="24.5" y1="37" x2="39.5" y2="37" stroke="#FAF7F2" stroke-width="6" stroke-linecap="round"/>
+</svg>
