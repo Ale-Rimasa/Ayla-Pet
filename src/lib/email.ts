@@ -272,7 +272,7 @@ export async function sendOrderConfirmation(order: Order): Promise<void> {
   const { text, html } = renderEmail('order-confirmation', order)
   await sendEmail({
     to: order.customer.email,
-    subject: `Tu pago para el pedido #${shortId} fue confirmado`,
+    subject: `Pedido confirmado · #${shortId}`,
     text,
     html,
   })
@@ -286,7 +286,7 @@ export async function sendOrderShipped(order: Order): Promise<{ sent: boolean }>
   const { text, html } = renderEmail('order-shipped', order)
   return sendEmail({
     to: order.customer.email,
-    subject: `Tu pedido #${shortId} fue enviado`,
+    subject: `Envío despachado · #${shortId}`,
     text,
     html,
   })
