@@ -167,6 +167,33 @@ describe('POST /api/webhooks/mercadopago', () => {
     expect(mockSendOrderConfirmation).toHaveBeenCalledOnce()
   })
 
+  it('awaits the confirmation email before responding (serverless drops un-awaited work)', async () => {
+    // In serverless the instance can be frozen right after the response is sent.
+    // A fire-and-forget `void sendOrderConfirmation(...)` may never finish its
+    // HTTP call to Resend → no email, no error logged. The handler must await it.
+    mockRecordMPPayment.mockResolvedValue({ ok: true })
+    mockFetchPayment.mockResolvedValue({
+      ok: true,
+      data: { status: 'approved', amount: 550000, orderId: 'order-uuid-1' },
+    })
+
+    let emailCompleted = false
+    mockSendOrderConfirmation.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            emailCompleted = true
+            resolve()
+          }, 10)
+        })
+    )
+
+    const { POST } = await import('@/app/api/webhooks/mercadopago/route')
+    await POST(buildValidRequest() as any)
+
+    expect(emailCompleted).toBe(true)
+  })
+
   it('valid sig + rejected → 200, cancels order, no stock/email side effects', async () => {
     mockRecordMPPayment.mockResolvedValue({ ok: true })
     mockUpdateOrderStatus.mockResolvedValue({ ok: true })

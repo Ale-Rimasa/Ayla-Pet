@@ -99,7 +99,10 @@ export async function processMPWebhook(paymentId: string): Promise<void> {
 
   await updateOrderStatus(orderId, order.status, 'paid')
 
-  void sendOrderConfirmation(order).catch((err) =>
+  // Must await: in serverless the instance can be frozen right after the response
+  // is sent, so a fire-and-forget send may never reach Resend. sendOrderConfirmation
+  // swallows its own errors, but keep a guard so a rejection can never bubble up.
+  await sendOrderConfirmation(order).catch((err) =>
     console.error('[webhook][email] Failed to send order confirmation:', err)
   )
 }
