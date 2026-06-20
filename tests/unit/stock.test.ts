@@ -72,6 +72,33 @@ describe('decrementStock', () => {
     })
   })
 
+  it('invokes rpc as a method on the client so supabase-js keeps its `this` binding', async () => {
+    // Regression: decrementStock used to detach the method
+    // (`const rpc = supabase.rpc; rpc(...)`), which loses `this`. The real
+    // supabase-js rpc() reads `this.rest` internally, so a detached call throws
+    // "Cannot read properties of undefined (reading 'rest')". This mock has a
+    // `this`-sensitive rpc that reproduces that contract — a plain vi.fn() can't
+    // catch the bug because it ignores `this`.
+    const client = {
+      rest: {},
+      rpc(_fn: string, _args: unknown) {
+        void (this as { rest: unknown }).rest
+        return Promise.resolve({ error: null })
+      },
+    }
+    const rpcSpy = vi.spyOn(client, 'rpc')
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    vi.mocked(createAdminClient).mockReturnValue(client as any)
+
+    const { decrementStock } = await import('@/lib/db/stock')
+    const result = await decrementStock([{ variantId: 'v1', quantity: 1 }])
+
+    expect(result).toEqual({ ok: true })
+    expect(rpcSpy).toHaveBeenCalledWith('decrement_stock_batch', {
+      p_items: [{ variant_id: 'v1', qty: 1 }],
+    })
+  })
+
   it('rolls back all decrements when any item has insufficient stock', async () => {
     // DB raises exception → entire transaction rolled back
     const { client } = createSupabaseMock({

@@ -117,11 +117,17 @@ export async function decrementStock(
   const payload = items.map((i) => ({ variant_id: i.variantId, qty: i.quantity }))
 
   // Generated Supabase types can miss project-specific RPCs until db:types is run.
-  const rpc = supabase.rpc as unknown as (
-    fn: 'decrement_stock_batch',
-    args: { p_items: typeof payload }
-  ) => Promise<{ error: { message: string } | null }>
-  const { error } = await rpc('decrement_stock_batch', { p_items: payload })
+  // Cast the client (not the method) and call rpc as a member: extracting it to a
+  // local detaches `this`, and supabase-js reads `this.rest` internally → throws
+  // "Cannot read properties of undefined (reading 'rest')".
+  const { error } = await (
+    supabase as unknown as {
+      rpc: (
+        fn: 'decrement_stock_batch',
+        args: { p_items: typeof payload }
+      ) => Promise<{ error: { message: string } | null }>
+    }
+  ).rpc('decrement_stock_batch', { p_items: payload })
 
   if (error) {
     const match = error.message.match(/insufficient_stock_for_variant:(.+)/)
