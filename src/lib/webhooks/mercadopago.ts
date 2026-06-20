@@ -25,14 +25,6 @@ export function verifyMPSignature(
   const manifest = `id:${paymentId};request-id:${xRequestId};ts:${ts};`
   const expected = createHmac('sha256', secret).update(manifest).digest('hex')
 
-  // TEMP DEBUG — diagnosing signature mismatch. Logs manifest + hashes, NOT the secret. Remove after.
-  console.info('[webhook][debug] verify', {
-    manifest,
-    expectedHash: expected,
-    receivedV1: v1,
-    match: expected === v1,
-  })
-
   try {
     return timingSafeEqual(Buffer.from(v1, 'hex'), Buffer.from(expected, 'hex'))
   } catch {
