@@ -374,6 +374,22 @@ export function ProductSheet({ product, categories, open, onClose }: ProductShee
                     </p>
                   </div>
                 </div>
+
+                <div className="mb-4 rounded-xl border border-dashed border-border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+                  <p className="font-medium text-foreground">Cómo subir imágenes que se vean bien</p>
+                  <ul className="mt-1.5 space-y-1">
+                    <li>
+                      <span className="font-medium text-foreground">Cuadradas (1:1)</span> — si no lo son, se recortan al centro.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">1200 × 1200 px</span> recomendado (mínimo 1000 × 1000).
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">WebP o JPG</span>, con el producto centrado en el cuadro.
+                    </li>
+                  </ul>
+                </div>
+
                 {isEdit && product ? (
                   <MultiImageUploader
                     productId={product.id}
