@@ -146,6 +146,16 @@ export function Footer() {
                   Contacto
                 </a>
               </li>
+              <li>
+                <Link href="/terminos-y-condiciones" className="transition-colors hover:text-[#B68A57]">
+                  Términos y condiciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/politica-de-privacidad" className="transition-colors hover:text-[#B68A57]">
+                  Política de privacidad
+                </Link>
+              </li>
             </ul>
           </div>
 
