@@ -6,8 +6,9 @@ import {
 } from 'lucide-react'
 import { getCategories } from '@/lib/db/categories'
 import { getHeroConfig } from '@/lib/db/site-settings'
-import { CATEGORY_SLUGS, LINKS } from '@/lib/constants'
+import { BRAND, CATEGORY_SLUGS, LINKS } from '@/lib/constants'
 import { HeroCarousel } from '@/components/storefront/HeroCarousel'
+import { InstagramFeed, type InstagramPost } from '@/components/storefront/InstagramFeed'
 
 // Next.js route segment config requires a statically-analyzable literal — cannot use imported constant
 export const revalidate = 300
@@ -54,6 +55,15 @@ const TESTIMONIAL_SCREENSHOTS = [
     src: '/Galo-Testimonial.png',
     alt: 'Recomendación de cliente',
   },
+]
+
+// Grilla curada de Instagram. Reemplazar src/alt/href con posts reales.
+// href puede apuntar a un post puntual (https://www.instagram.com/p/<id>/) o al perfil.
+const INSTAGRAM_POSTS: InstagramPost[] = [
+  { src: '/MateAbu.jpg', alt: 'Chapita personalizada de Mate', href: 'https://www.instagram.com/p/DZf13WUjzw0/', fit: 'contain' },
+  { src: '/hercuIg.jpg', alt: 'Chapita personalizada de Hércules', href: 'https://www.instagram.com/p/DYiC2MTyBS1/' },
+  { src: '/OttoIg.jpg', alt: 'Chapita personalizada de Otto', href: 'https://www.instagram.com/p/DY-rekQRJJj/', fit: 'contain' },
+  { src: '/UmaIg.jpg', alt: 'Chapita personalizada de Uma', href: 'https://www.instagram.com/p/DYe26Q3kYeW/' },
 ]
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -274,6 +284,15 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          INSTAGRAM — "Seguinos en Instagram"
+      ═══════════════════════════════════════════════════════════════ */}
+      <InstagramFeed
+        posts={INSTAGRAM_POSTS}
+        profileUrl={BRAND.instagram}
+        handle="aylastudio.ba"
+      />
 
       {/* ═══════════════════════════════════════════════════════════════
           FINAL CTA BANNER — "Creá hoy un recuerdo único"
